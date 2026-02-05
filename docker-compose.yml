@@ -1,0 +1,21 @@
+services:
+  agente-financeiro:
+    build: .
+    container_name: agente-financeiro
+    restart: always
+    expose:
+      - "8000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.finanzas.rule=Host(`finanzas.ktuche.com`)"
+      - "traefik.http.routers.finanzas.entrypoints=websecure"
+      - "traefik.http.routers.finanzas.tls.certresolver=myresolver"
+      - "traefik.http.services.finanzas.loadbalancer.server.port=8000"
+    networks:
+      - n8n_default
+    volumes:
+      - ./data:/app/data
+
+networks:
+  n8n_default:
+    external: true

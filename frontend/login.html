@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso - Finanzas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            /* Changed from height: 100vh to allow scrolling */
+            background-color: #f3f4f6;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+            /* Allow scroll for mobile keyboard */
+            padding: 20px;
+        }
+
+        /* Blue Wave Background */
+        .wave-bg {
+            position: fixed;
+            /* Fixed so it doesn't scroll away */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+        }
+
+        .wave-shape {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(circle at 70% 30%, #4338ca 0%, #4f46e5 100%);
+            border-radius: 0 0 0 100%;
+            opacity: 0.1;
+            filter: blur(60px);
+            z-index: -1;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2.5rem;
+            border-radius: 30px;
+            box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.15);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            position: relative;
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.2rem;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-left: 0.5rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            border-radius: 12px;
+            border: 2px solid #f3f4f6;
+            background: #f9fafb;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            color: var(--text-main);
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-login:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.4);
+        }
+
+        .toggle-text {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .toggle-text span {
+            color: var(--primary);
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* Decorative Circles */
+        .circle {
+            position: fixed;
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        .c1 {
+            width: 200px;
+            height: 200px;
+            background: #6366f1;
+            top: -50px;
+            left: -50px;
+            opacity: 0.1;
+        }
+
+        .c2 {
+            width: 100px;
+            height: 100px;
+            background: #818cf8;
+            bottom: 50px;
+            right: -20px;
+            opacity: 0.15;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wave-bg"></div>
+    <div class="wave-shape"></div>
+    <div class="circle c1"></div>
+    <div class="circle c2"></div>
+
+    <div class="login-card">
+        <div class="header" id="headerText">
+            <h1>¡Bienvenido!</h1>
+            <p>Ingresa para administrar tus finanzas</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="input-group">
+                <label>Tu Nombre</label>
+                <input type="text" id="name" required placeholder="Ej: Juan">
+            </div>
+
+            <div class="input-group">
+                <label>Contraseña</label>
+                <input type="password" id="password" required placeholder="••••••••">
+            </div>
+
+            <button type="submit" class="btn-login" id="submitBtn">Ingresar</button>
+        </form>
+
+        <p class="toggle-text" id="toggleText">
+            ¿No tienes cuenta? <span onclick="toggleMode()">Crear Cuenta</span>
+        </p>
+    </div>
+
+    <script>
+        const API_URL = '';
+        let isLoginMode = true;
+
+        function toggleMode() {
+            isLoginMode = !isLoginMode;
+            const headerH1 = document.querySelector('#headerText h1');
+            const headerP = document.querySelector('#headerText p');
+            const btn = document.getElementById('submitBtn');
+            const toggle = document.getElementById('toggleText');
+
+            if (isLoginMode) {
+                headerH1.innerText = '¡Bienvenido!';
+                headerP.innerText = 'Ingresa para administrar tus finanzas';
+                btn.innerText = 'Ingresar';
+                toggle.innerHTML = '¿No tienes cuenta? <span onclick="toggleMode()">Crear Cuenta</span>';
+            } else {
+                headerH1.innerText = 'Crear Cuenta';
+                headerP.innerText = 'Configura tu perfil para empezar';
+                btn.innerText = 'Registrarse';
+                toggle.innerHTML = '¿Ya tienes cuenta? <span onclick="toggleMode()">Ingresar</span>';
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const password = document.getElementById('password').value; // Get password
+            const btn = document.getElementById('submitBtn');
+
+            btn.innerHTML = isLoginMode ? 'Ingresando...' : 'Creando...';
+            btn.style.opacity = '0.8';
+
+            await new Promise(r => setTimeout(r, 800));
+
+            try {
+                if (isLoginMode) {
+                    // LOGIN Logic
+                    const res = await fetch(`${API_URL}/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: name, password: password })
+                    });
+
+                    if (!res.ok) throw new Error('Credenciales inválidas');
+
+                    // Success
+                    localStorage.setItem('isLoggedIn', 'true');
+                    window.location.href = 'index.html';
+
+                } else {
+                    // REGISTER Logic (Update Profile)
+                    const res = await fetch(`${API_URL}/profile`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: name, password: password })
+                    });
+
+                    if (!res.ok) throw new Error('Error al crear perfil');
+
+                    // Auto-login after register
+                    localStorage.setItem('isLoggedIn', 'true');
+                    window.location.href = 'index.html';
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert(isLoginMode ? 'Usuario o contraseña incorrectos.' : 'Error al guardar.');
+                btn.innerHTML = isLoginMode ? 'Ingresar' : 'Registrarse';
+                btn.style.opacity = '1';
+            }
+        });
+    </script>
+</body>
+
+</html>

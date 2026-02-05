@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanzas Simplificadas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Overlay -->
+        <div class="menu-overlay" id="menuOverlay" onclick="toggleSidebar()"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <i data-lucide="wallet"></i>
+                <span>Finanzas</span>
+            </div>
+            <nav>
+                <a href="#" class="active" onclick="switchTab('dashboard')"><i data-lucide="layout-dashboard"></i>
+                    Dashboard</a>
+                <a href="#" onclick="switchTab('transactions')"><i data-lucide="list"></i> Transacciones</a>
+                <a href="#" onclick="switchTab('budgets')"><i data-lucide="pie-chart"></i> Presupuestos</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button id="menuToggle" onclick="toggleSidebar()" style="display: none;">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <h1 id="userNameDisplay" onclick="openProfileModal()"
+                        style="cursor: pointer; text-decoration: underline; text-decoration-style: dotted;">Hola,
+                        Usuario
+                    </h1>
+                </div>
+                <button class="btn-primary" onclick="openTransactionModal()">
+                    <i data-lucide="plus"></i> Nueva Transacción
+                </button>
+            </header>
+
+            <!-- Dashboard View -->
+            <div id="dashboard" class="view active">
+                <div class="summary-cards">
+                    <div class="card">
+                        <h3>Saldo Total</h3>
+                        <p class="amount" id="balanceDisplay">$0 COP</p>
+                    </div>
+                    <div class="card">
+                        <h3>Ingresos</h3>
+                        <p class="amount income" id="incomeDisplay">$0 COP</p>
+                    </div>
+                    <div class="card">
+                        <h3>Gastos</h3>
+                        <p class="amount expense" id="expenseDisplay">$0 COP</p>
+                    </div>
+                </div>
+
+                <div class="charts-container">
+                    <div class="card chart-card">
+                        <h3>Gastos por Categoría</h3>
+                        <div style="position: relative; height: 300px;">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="card list-card">
+                        <h3>Alertas de Presupuesto</h3>
+                        <div id="budgetAlerts" class="budget-list">
+                            <!-- Budget items injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transactions View -->
+            <div id="transactions" class="view" style="display: none;">
+                <div class="mobile-header-nav">
+                    <button class="btn-back" onclick="switchTab('dashboard')">
+                        <i data-lucide="arrow-left"></i> Volver al Inicio
+                    </button>
+                </div>
+                <div class="card">
+                    <h3 style="margin-bottom: 1.5rem;">Historial de Transacciones</h3>
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Descripción</th>
+                                <th>Categoría</th>
+                                <th>Monto</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionList">
+                            <!-- Transactions injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Budgets View -->
+            <div id="budgets" class="view" style="display: none;">
+                <div class="mobile-header-nav">
+                    <button class="btn-back" onclick="switchTab('dashboard')">
+                        <i data-lucide="arrow-left"></i> Volver al Inicio
+                    </button>
+                </div>
+                <header style="margin-bottom: 20px; justify-content: space-between; display: flex;">
+                    <h3>Gestión de Presupuestos</h3>
+                    <!-- 'Definir Presupuesto' button now styled as secondary/pill -->
+                    <button class="btn-secondary" onclick="openBudgetModal()">
+                        <i data-lucide="plus-circle" style="width:18px; margin-right:5px;"></i> Nuevo / Editar
+                        Presupuesto
+                    </button>
+                </header>
+                <div class="budget-grid" id="budgetMgmtGrid">
+                    <!-- Management Cards injected here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Transaction Modal (Add/Edit) -->
+    <div id="transactionModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('transactionModal')"
+                style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
+            <h2 id="transModalTitle" style="margin-bottom: 1.5rem;">Nueva Transacción</h2>
+            <form id="transactionForm">
+                <input type="hidden" id="transId">
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select id="type" required>
+                        <option value="expense">Gasto</option>
+                        <option value="income">Ingreso</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Monto (COP)</label>
+                    <input type="text" id="amount" required placeholder="0,00" oninput="formatAmountInput(this)">
+                </div>
+                <div class="form-group">
+                    <label>Descripción</label>
+                    <input type="text" id="description" required placeholder="Ej: Supermercado">
+                </div>
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select id="category" required>
+                        <option value="" disabled selected>Seleccione una categoría</option>
+                        <option value="Alimentación">Alimentación</option>
+                        <option value="Transporte">Transporte</option>
+                        <option value="Vivienda">Vivienda</option>
+                        <option value="Entretenimiento">Entretenimiento</option>
+                        <option value="Salud">Salud</option>
+                        <option value="Educación">Educación</option>
+                        <option value="Servicios">Servicios</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Fecha</label>
+                    <input type="date" id="date" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary"
+                        onclick="closeModal('transactionModal')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Budget Modal (Simplified: Category, Value, Actions) -->
+    <div id="budgetModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('budgetModal')"
+                style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
+            <h2 id="budgetModalTitle" style="margin-bottom: 1.5rem;">Presupuesto</h2>
+            <form id="budgetForm">
+                <input type="hidden" id="budgetId">
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select id="budgetCategory" required>
+                        <option value="" disabled selected>Seleccione una categoría</option>
+                        <option value="Alimentación">Alimentación</option>
+                        <option value="Transporte">Transporte</option>
+                        <option value="Vivienda">Vivienda</option>
+                        <option value="Entretenimiento">Entretenimiento</option>
+                        <option value="Salud">Salud</option>
+                        <option value="Educación">Educación</option>
+                        <option value="Servicios">Servicios</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Límite (COP)</label>
+                    <input type="text" id="budgetLimit" required placeholder="0,00" oninput="formatAmountInput(this)">
+                </div>
+
+                <div class="modal-actions" style="justify-content: space-between; margin-top: 2rem;">
+                    <!-- Delete Button (Only shown if editing) -->
+                    <button type="button" id="btnDeleteBudget" class="btn-secondary"
+                        style="color: var(--danger); border-color: var(--danger); display:none;"
+                        onclick="deleteBudgetAction()">Excluir</button>
+
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button type="button" class="btn-secondary"
+                            onclick="closeModal('budgetModal')">Cancelar</button>
+                        <!-- 'Incluir' / 'Alterar' changes based on context -->
+                        <button type="submit" id="btnSaveBudget" class="btn-primary">Incluir</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('profileModal')"
+                style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
+            <h2 style="margin-bottom: 1.5rem;">Editar Perfil</h2>
+            <form id="profileForm">
+                <div class="form-group">
+                    <label>Su Nombre</label>
+                    <input type="text" id="profileName" required placeholder="Ej: Juan Perez">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('profileModal')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,251 @@
+{
+    "name": "Agente Financeiro - V4 (Clean)",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "whatsapp-webhook",
+                "responseMode": "lastNode"
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                0,
+                0
+            ],
+            "id": "webhook-trigger",
+            "name": "Webhook WhatsApp"
+        },
+        {
+            "parameters": {
+                "model": "gpt-4o-mini",
+                "messages": {
+                    "values": [
+                        {
+                            "role": "system",
+                            "content": "Eres un asistente financiero personal para un usuario en Colombia 🇨🇴.\n\nOBJETIVO: Clasificar la intención del usuario y extraer datos.\n\nMODO 1: TRANSACCIÓN\nSi el usuario dice 'gaste', 'compre', 'pague' o menciona un valor:\n- Extrae: amount (número), category (Alimentación, Transporte, etc), description, type (expense/income).\n\nMODO 2: ANÁLISIS\nSi el usuario pregunta 'como voy?', 'resumen', 'saldo', 'dame un consejo':\n- Retorna SOLAMENTE: { \"type\": \"analysis\", \"description\": \"analysis_request\" }\n\nREGLAS DE SALIDA:\n- Responde SIEMPRE con JSON PURO.\n- NO uses Markdown (```json).\n- Moneda: Peso Colombiano (COP)."
+                        },
+                        {
+                            "role": "user",
+                            "content": "={{ $json.body.entry[0].changes[0].value.messages[0].text.body }}"
+                        }
+                    ]
+                },
+                "jsonOutput": true
+            },
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1.4,
+            "position": [
+                220,
+                0
+            ],
+            "id": "ai-parser",
+            "name": "IA Classificadora"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{ JSON.parse($json.text).type }}",
+                            "operation": "contains",
+                            "value2": "analysis"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                540,
+                0
+            ],
+            "id": "router",
+            "name": "É Análise?"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://agente-financeiro:8000/transactions/",
+                "authentication": "none",
+                "sendBody": true,
+                "contentType": "json",
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "description",
+                            "value": "={{ JSON.parse($json.text).description }}"
+                        },
+                        {
+                            "name": "amount",
+                            "value": "={{ JSON.parse($json.text).amount }}"
+                        },
+                        {
+                            "name": "category",
+                            "value": "={{ JSON.parse($json.text).category }}"
+                        },
+                        {
+                            "name": "type",
+                            "value": "={{ JSON.parse($json.text).type || 'expense' }}"
+                        },
+                        {
+                            "name": "date",
+                            "value": "={{ $today.format('yyyy-MM-dd') }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                800,
+                140
+            ],
+            "id": "save-transaction",
+            "name": "Salvar Transação"
+        },
+        {
+            "parameters": {
+                "method": "GET",
+                "url": "http://agente-financeiro:8000/summary",
+                "authentication": "none"
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.1,
+            "position": [
+                800,
+                -160
+            ],
+            "id": "get-summary",
+            "name": "Ler Resumo"
+        },
+        {
+            "parameters": {
+                "model": "gpt-4o-mini",
+                "messages": {
+                    "values": [
+                        {
+                            "role": "system",
+                            "content": "Eres un Consultor Financiero Colombiano, amigo y directo.\n\nTu trabajo: Analizar los datos financieros del usuario y dar una respuesta en texto para WhatsApp.\n\nDatos del Usuario (JSON): {{ JSON.stringify($json) }}\n\nInstrucciones:\n1. Saluda brevemente.\n2. Resume el saldo actual y gastos del mes.\n3. Mira los presupuestos (budgets): Si alguna categoría (percentage) pasó del 80%, ALERTA al usuario con emojis ⚠️.\n4. Da un consejo accionable y corto.\n5. Usa gírias colombianas leves (Parcero, pilas, ojo)."
+                        }
+                    ]
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.chainLlm",
+            "typeVersion": 1.4,
+            "position": [
+                1020,
+                -160
+            ],
+            "id": "ai-advisor",
+            "name": "IA Conselheira"
+        },
+        {
+            "parameters": {
+                "operation": "send",
+                "text": "={{ $json.text }}",
+                "phoneNumberId": "914691621734879",
+                "to": "REPLACE_WITH_YOUR_PHONE_NUMBER"
+            },
+            "type": "n8n-nodes-base.whatsapp",
+            "typeVersion": 1,
+            "position": [
+                1240,
+                -160
+            ],
+            "id": "reply-advice",
+            "name": "Enviar Conselho"
+        },
+        {
+            "parameters": {
+                "operation": "send",
+                "text": "=✅ *Guardado!*\n\n📝 {{ JSON.parse($('IA Classificadora').item.json.text).description }}\n💰 ${{ JSON.parse($('IA Classificadora').item.json.text).amount }}",
+                "phoneNumberId": "914691621734879",
+                "to": "REPLACE_WITH_YOUR_PHONE_NUMBER"
+            },
+            "type": "n8n-nodes-base.whatsapp",
+            "typeVersion": 1,
+            "position": [
+                1040,
+                140
+            ],
+            "id": "reply-transaction",
+            "name": "Confirmar Transação"
+        }
+    ],
+    "connections": {
+        "webhook-trigger": {
+            "main": [
+                [
+                    {
+                        "node": "ai-parser",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ai-parser": {
+            "main": [
+                [
+                    {
+                        "node": "router",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "router": {
+            "main": [
+                [
+                    {
+                        "node": "get-summary",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "save-transaction",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "get-summary": {
+            "main": [
+                [
+                    {
+                        "node": "ai-advisor",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ai-advisor": {
+            "main": [
+                [
+                    {
+                        "node": "reply-advice",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "save-transaction": {
+            "main": [
+                [
+                    {
+                        "node": "reply-transaction",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
