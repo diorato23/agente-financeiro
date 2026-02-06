@@ -43,12 +43,34 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
+    // Show admin link if user is admin
+    const userRole = localStorage.getItem('user_role');
+    const adminLink = document.getElementById('adminLink');
+    if (adminLink && userRole === 'admin') {
+        adminLink.style.display = 'flex';
+    }
+
+    // Use stored username if available
+    const storedName = localStorage.getItem('user_name');
+    if (storedName) {
+        document.getElementById('userNameDisplay').innerText = `Hola, ${storedName}`;
+    }
+
     fetchSummary();
     fetchTransactions();
     fetchBudgets();
     fetchProfile();
     setupModals();
 });
+
+// Logout function
+window.logout = () => {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('user_name');
+    localStorage.removeItem('isLoggedIn');
+    window.location.href = 'login.html';
+};
 
 // Fetch Data
 async function fetchProfile() {

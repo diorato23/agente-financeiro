@@ -96,3 +96,71 @@ def verify_login(db: Session, login_data: schemas.LoginSchema):
     if profile.name.lower() == login_data.name.lower() and profile.password == login_data.password:
         return True
     return False
+
+
+# ============ USERS ============
+
+def get_user(db: Session, user_id: int):
+    """Obtener usuario por ID"""
+    return db.query(models.User).filter(models.User.id == user_id).first()
+
+def get_user_by_username(db: Session, username: str):
+    """Obtener usuario por username"""
+    return db.query(models.User).filter(models.User.username == username).first()
+
+def get_user_by_email(db: Session, email: str):
+    """Obtener usuario por email"""
+    return db.query(models.User).filter(models.User.email == email).first()
+
+def get_users(db: Session, skip: int = 0, limit: int = 100):
+    """Obtener lista de usuarios"""
+    return db.query(models.User).offset(skip).limit(limit).all()
+
+def create_user(db: Session, user: schemas.UserCreate, password_hash: str):
+    """Crear usuario"""
+    db_user = models.User(
+        username=user.username,
+        email=user.email,
+        password_hash=password_hash,
+        role=user.role,
+        is_active=user.is_active
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+def update_user(db: Session, user_id: int, user_update: schemas.UserUpdate, password_hash: str = None):
+    """Actualizar usuario"""
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if db_user:
+        if user_update.username is not None:
+            db_user.username = user_update.username
+        if user_update.email is not None:
+            db_user.email = user_update.email
+        if user_update.role is not None:
+            db_user.role = user_update.role
+        if user_update.is_active is not None:
+            db_user.is_active = user_update.is_active
+        if password_hash:
+            db_user.password_hash = password_hash
+        db.commit()
+        db.refresh(db_user)
+    return db_user
+
+def delete_user(db: Session, user_id: int):
+    """Eliminar usuario"""
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if db_user:
+        db.delete(db_user)
+        db.commit()
+    return db_user
+
+def toggle_user_active(db: Session, user_id: int):
+    """Activar/Inactivar usuario"""
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if db_user:
+        db_user.is_active = not db_user.is_active
+        db.commit()
+        db.refresh(db_user)
+    return db_user

@@ -237,17 +237,17 @@
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('name').value;
-            const password = document.getElementById('password').value; // Get password
+            const password = document.getElementById('password').value;
             const btn = document.getElementById('submitBtn');
 
             btn.innerHTML = isLoginMode ? 'Ingresando...' : 'Creando...';
             btn.style.opacity = '0.8';
 
-            await new Promise(r => setTimeout(r, 800));
+            await new Promise(r => setTimeout(r, 500));
 
             try {
                 if (isLoginMode) {
-                    // LOGIN Logic
+                    // LOGIN Logic - using new JWT system
                     const res = await fetch(`${API_URL}/login`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -256,12 +256,20 @@
 
                     if (!res.ok) throw new Error('Credenciales inválidas');
 
-                    // Success
+                    const data = await res.json();
+
+                    // Store JWT token and user info
                     localStorage.setItem('isLoggedIn', 'true');
+                    if (data.access_token) {
+                        localStorage.setItem('access_token', data.access_token);
+                        localStorage.setItem('user_role', data.role || 'user');
+                        localStorage.setItem('user_name', data.name);
+                    }
+
                     window.location.href = 'index.html';
 
                 } else {
-                    // REGISTER Logic (Update Profile)
+                    // REGISTER Logic - only available for first user
                     const res = await fetch(`${API_URL}/profile`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
