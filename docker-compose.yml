@@ -16,6 +16,17 @@ services:
     volumes:
       - ./data:/app/data
 
+  redis:
+    image: redis:alpine
+    container_name: redis-agente
+    restart: always
+    expose:
+      - "6379"
+    volumes:
+      - ./redis_data:/data
+    networks:
+      - n8n_default
+
 networks:
   n8n_default:
     external: true

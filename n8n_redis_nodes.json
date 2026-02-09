@@ -1,0 +1,27 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "push",
+        "key": "=history:{{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+        "value": "={{ JSON.stringify({\n  role: 'user',\n  type: $('WhatsApp Trigger').item.json.messages[0].type,\n  content: $('WhatsApp Trigger').item.json.messages[0].text.body || $('WhatsApp Trigger').item.json.messages[0].image.caption || '',\n  media_id: $('WhatsApp Trigger').item.json.messages[0].image.id || $('WhatsApp Trigger').item.json.messages[0].audio.id || null,\n  timestamp: $now.toISO()\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        460,
+        1200
+      ],
+      "id": "redis-save-history",
+      "name": "Salvar no Redis",
+      "credentials": {
+        "redis": {
+          "id": "redis-local",
+          "name": "Redis Local"
+        }
+      }
+    }
+  ],
+  "connections": {}
+}

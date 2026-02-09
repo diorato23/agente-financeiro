@@ -1,0 +1,199 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "operation": "downloadMedia",
+                "fileId": "={{ $json.message.content_url }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.whatsApp",
+            "typeVersion": 1,
+            "position": [
+                820,
+                1400
+            ],
+            "id": "download-image",
+            "name": "Baixar Imagem",
+            "credentials": {
+                "whatsAppApi": {
+                    "id": "Jl5aH7LJ3O7m8M3p",
+                    "name": "WhatsApp account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "downloadMedia",
+                "fileId": "={{ $json.message.content_url }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.whatsApp",
+            "typeVersion": 1,
+            "position": [
+                820,
+                1600
+            ],
+            "id": "download-audio",
+            "name": "Baixar Audio",
+            "credentials": {
+                "whatsAppApi": {
+                    "id": "Jl5aH7LJ3O7m8M3p",
+                    "name": "WhatsApp account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.openAiAudio",
+            "typeVersion": 1,
+            "position": [
+                1040,
+                1600
+            ],
+            "id": "transcribe-audio",
+            "name": "Transcrever Audio",
+            "credentials": {
+                "openAiApi": {
+                    "id": "kzsagMP6DxHMcdAf",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "mode": "url",
+                "url": "={{ $('Baixar Imagem').item.binary.data.url }}",
+                "prompt": "Descreva esta imagem com detalhes para contexto financeiro.",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.openAiChat",
+            "typeVersion": 1,
+            "position": [
+                1040,
+                1400
+            ],
+            "id": "analyze-image",
+            "name": "Analisar Imagem",
+            "credentials": {
+                "openAiApi": {
+                    "id": "kzsagMP6DxHMcdAf",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "push",
+                "key": "=history:{{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+                "value": "={{ JSON.stringify({\n  role: 'user',\n  type: 'image',\n  content: $json.text || 'Imagem enviada',\n  timestamp: $now.toISO()\n}) }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                1260,
+                1400
+            ],
+            "id": "save-image-redis",
+            "name": "Salvar Imagem Redis",
+            "credentials": {
+                "redis": {
+                    "id": "redis-local",
+                    "name": "Redis Local"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "push",
+                "key": "=history:{{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+                "value": "={{ JSON.stringify({\n  role: 'user',\n  type: 'audio',\n  content: $json.text,\n  timestamp: $now.toISO()\n}) }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                1260,
+                1600
+            ],
+            "id": "save-audio-redis",
+            "name": "Salvar Audio Redis",
+            "credentials": {
+                "redis": {
+                    "id": "redis-local",
+                    "name": "Redis Local"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "push",
+                "key": "=history:{{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+                "value": "={{ JSON.stringify({\n  role: 'user',\n  type: 'text',\n  content: $json.message.content,\n  timestamp: $now.toISO()\n}) }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                820,
+                1200
+            ],
+            "id": "save-text-redis",
+            "name": "Salvar Texto Redis",
+            "credentials": {
+                "redis": {
+                    "id": "redis-local",
+                    "name": "Redis Local"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Baixar Imagem": {
+            "main": [
+                [
+                    {
+                        "node": "Analisar Imagem",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Baixar Audio": {
+            "main": [
+                [
+                    {
+                        "node": "Transcrever Audio",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Transcrever Audio": {
+            "main": [
+                [
+                    {
+                        "node": "Salvar Audio Redis",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Analisar Imagem": {
+            "main": [
+                [
+                    {
+                        "node": "Salvar Imagem Redis",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
