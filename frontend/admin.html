@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administración de Usuarios - Finanzas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .users-table th {
+            background: var(--bg-secondary);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        .users-table tbody tr:hover {
+            background: var(--bg-secondary);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-admin {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+
+        .badge-user {
+            background: #e0e7ff;
+            color: #4f46e5;
+        }
+
+        .badge-active {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .badge-inactive {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .btn-edit {
+            background: #e0e7ff;
+            color: #4f46e5;
+        }
+
+        .btn-toggle {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .btn-delete {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-header h2 {
+            font-size: 1.5rem;
+            color: var(--text-main);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Modal Styles */
+        .user-modal .modal-content {
+            max-width: 500px;
+        }
+
+        .role-selector {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .role-option {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .role-option:hover {
+            border-color: var(--primary);
+        }
+
+        .role-option.selected {
+            border-color: var(--primary);
+            background: var(--bg-secondary);
+        }
+
+        .role-option i {
+            margin-bottom: 0.5rem;
+        }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 26px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Overlay -->
+        <div class="menu-overlay" id="menuOverlay" onclick="toggleSidebar()"></div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <i data-lucide="wallet"></i>
+                <span>Finanzas</span>
+            </div>
+            <nav>
+                <a href="index.html"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+                <a href="index.html#transactions"><i data-lucide="list"></i> Transacciones</a>
+                <a href="index.html#budgets"><i data-lucide="pie-chart"></i> Presupuestos</a>
+                <a href="admin.html" class="active"><i data-lucide="users"></i> Usuarios</a>
+            </nav>
+            <div style="margin-top: auto; padding: 1rem;">
+                <button class="btn-secondary" onclick="logout()" style="width: 100%;">
+                    <i data-lucide="log-out" style="width: 18px;"></i> Cerrar Sesión
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button id="menuToggle" onclick="toggleSidebar()" style="display: none;">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <h1>Administración de Usuarios</h1>
+                </div>
+            </header>
+
+            <div class="card">
+                <div class="page-header">
+                    <h2>Usuarios del Sistema</h2>
+                    <button class="btn-primary" onclick="openUserModal()">
+                        <i data-lucide="user-plus" style="width: 18px;"></i> Nuevo Usuario
+                    </button>
+                </div>
+
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Email</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                            <th>Creado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Users injected here -->
+                    </tbody>
+                </table>
+
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <i data-lucide="users" style="width: 48px; height: 48px;"></i>
+                    <p>No hay usuarios registrados</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- User Modal -->
+    <div id="userModal" class="modal user-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('userModal')">&times;</span>
+            <h2 id="userModalTitle">Nuevo Usuario</h2>
+            <form id="userForm">
+                <input type="hidden" id="userId">
+                
+                <div class="form-group">
+                    <label>Nombre de Usuario</label>
+                    <input type="text" id="username" required placeholder="Ej: juan.perez">
+                </div>
+
+                <div class="form-group">
+                    <label>Email (opcional)</label>
+                    <input type="email" id="email" placeholder="Ej: juan@empresa.com">
+                </div>
+
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="password" placeholder="••••••••">
+                    <small id="passwordHint" style="color: var(--text-muted);">Requerido para nuevos usuarios</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Rol</label>
+                    <div class="role-selector">
+                        <div class="role-option" data-role="user" onclick="selectRole('user')">
+                            <i data-lucide="user"></i>
+                            <div>Usuario</div>
+                        </div>
+                        <div class="role-option" data-role="admin" onclick="selectRole('admin')">
+                            <i data-lucide="shield"></i>
+                            <div>Admin</div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="role" value="user">
+                </div>
+
+                <div class="form-group">
+                    <label>Estado</label>
+                    <div class="switch-container">
+                        <label class="switch">
+                            <input type="checkbox" id="isActive" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span id="activeLabel">Activo</span>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('userModal')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <i data-lucide="alert-triangle" style="width: 48px; height: 48px; color: var(--danger); margin-bottom: 1rem;"></i>
+            <h2>¿Eliminar Usuario?</h2>
+            <p style="color: var(--text-muted); margin: 1rem 0;">Esta acción no se puede deshacer.</p>
+            <div class="modal-actions" style="justify-content: center;">
+                <button type="button" class="btn-secondary" onclick="closeModal('confirmModal')">Cancelar</button>
+                <button type="button" class="btn-primary" style="background: var(--danger);" onclick="confirmDelete()">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '';
+        let users = [];
+        let editingUserId = null;
+        let deletingUserId = null;
+
+        // Check auth on load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadUsers();
+            lucide.createIcons();
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('access_token');
+            const role = localStorage.getItem('user_role');
+            
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            if (role !== 'admin') {
+                alert('Acceso denegado. Se requieren permisos de administrador.');
+                window.location.href = 'index.html';
+                return;
+            }
+        }
+
+        function getAuthHeaders() {
+            const token = localStorage.getItem('access_token');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch(`${API_URL}/users/`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (res.status === 401 || res.status === 403) {
+                    logout();
+                    return;
+                }
+
+                users = await res.json();
+                renderUsers();
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        function renderUsers() {
+            const tbody = document.getElementById('usersTableBody');
+            const emptyState = document.getElementById('emptyState');
+
+            if (users.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td><strong>${user.username}</strong></td>
+                    <td>${user.email || '-'}</td>
+                    <td>
+                        <span class="badge ${user.role === 'admin' ? 'badge-admin' : 'badge-user'}">
+                            ${user.role === 'admin' ? 'Admin' : 'Usuario'}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge ${user.is_active ? 'badge-active' : 'badge-inactive'}">
+                            ${user.is_active ? 'Activo' : 'Inactivo'}
+                        </span>
+                    </td>
+                    <td>${formatDate(user.created_at)}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-icon btn-edit" onclick="editUser(${user.id})" title="Editar">
+                                <i data-lucide="pencil" style="width: 16px;"></i>
+                            </button>
+                            <button class="btn-icon btn-toggle" onclick="toggleUser(${user.id})" title="${user.is_active ? 'Inactivar' : 'Activar'}">
+                                <i data-lucide="${user.is_active ? 'user-x' : 'user-check'}" style="width: 16px;"></i>
+                            </button>
+                            <button class="btn-icon btn-delete" onclick="deleteUser(${user.id})" title="Eliminar">
+                                <i data-lucide="trash-2" style="width: 16px;"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('es-CO', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        function openUserModal(userId = null) {
+            editingUserId = userId;
+            const modal = document.getElementById('userModal');
+            const title = document.getElementById('userModalTitle');
+            const passwordInput = document.getElementById('password');
+            const passwordHint = document.getElementById('passwordHint');
+
+            if (userId) {
+                const user = users.find(u => u.id === userId);
+                title.textContent = 'Editar Usuario';
+                document.getElementById('userId').value = user.id;
+                document.getElementById('username').value = user.username;
+                document.getElementById('email').value = user.email || '';
+                document.getElementById('password').value = '';
+                document.getElementById('role').value = user.role;
+                document.getElementById('isActive').checked = user.is_active;
+                passwordInput.required = false;
+                passwordHint.textContent = 'Dejar vacío para mantener la actual';
+                selectRole(user.role);
+            } else {
+                title.textContent = 'Nuevo Usuario';
+                document.getElementById('userForm').reset();
+                document.getElementById('userId').value = '';
+                document.getElementById('isActive').checked = true;
+                passwordInput.required = true;
+                passwordHint.textContent = 'Requerido para nuevos usuarios';
+                selectRole('user');
+            }
+
+            updateActiveLabel();
+            modal.style.display = 'flex';
+        }
+
+        function selectRole(role) {
+            document.querySelectorAll('.role-option').forEach(el => {
+                el.classList.remove('selected');
+            });
+            document.querySelector(`[data-role="${role}"]`).classList.add('selected');
+            document.getElementById('role').value = role;
+        }
+
+        function updateActiveLabel() {
+            const isActive = document.getElementById('isActive').checked;
+            document.getElementById('activeLabel').textContent = isActive ? 'Activo' : 'Inactivo';
+        }
+
+        document.getElementById('isActive').addEventListener('change', updateActiveLabel);
+
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const userData = {
+                username: document.getElementById('username').value,
+                email: document.getElementById('email').value || null,
+                role: document.getElementById('role').value,
+                is_active: document.getElementById('isActive').checked
+            };
+
+            const password = document.getElementById('password').value;
+            if (password) {
+                userData.password = password;
+            }
+
+            try {
+                let res;
+                if (editingUserId) {
+                    res = await fetch(`${API_URL}/users/${editingUserId}`, {
+                        method: 'PUT',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify(userData)
+                    });
+                } else {
+                    res = await fetch(`${API_URL}/users/`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify(userData)
+                    });
+                }
+
+                if (!res.ok) {
+                    const error = await res.json();
+                    alert(error.detail || 'Error al guardar usuario');
+                    return;
+                }
+
+                closeModal('userModal');
+                loadUsers();
+            } catch (error) {
+                console.error('Error saving user:', error);
+                alert('Error al guardar usuario');
+            }
+        });
+
+        function editUser(userId) {
+            openUserModal(userId);
+        }
+
+        async function toggleUser(userId) {
+            try {
+                const res = await fetch(`${API_URL}/users/${userId}/toggle`, {
+                    method: 'PATCH',
+                    headers: getAuthHeaders()
+                });
+
+                if (!res.ok) {
+                    const error = await res.json();
+                    alert(error.detail || 'Error al cambiar estado');
+                    return;
+                }
+
+                loadUsers();
+            } catch (error) {
+                console.error('Error toggling user:', error);
+            }
+        }
+
+        function deleteUser(userId) {
+            deletingUserId = userId;
+            document.getElementById('confirmModal').style.display = 'flex';
+        }
+
+        async function confirmDelete() {
+            if (!deletingUserId) return;
+
+            try {
+                const res = await fetch(`${API_URL}/users/${deletingUserId}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+
+                if (!res.ok) {
+                    const error = await res.json();
+                    alert(error.detail || 'Error al eliminar usuario');
+                    return;
+                }
+
+                closeModal('confirmModal');
+                loadUsers();
+            } catch (error) {
+                console.error('Error deleting user:', error);
+            }
+            
+            deletingUserId = null;
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('menuOverlay').classList.toggle('active');
+        }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('user_role');
+            localStorage.removeItem('isLoggedIn');
+            window.location.href = 'login.html';
+        }
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>

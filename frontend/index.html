@@ -27,7 +27,13 @@
                     Dashboard</a>
                 <a href="#" onclick="switchTab('transactions')"><i data-lucide="list"></i> Transacciones</a>
                 <a href="#" onclick="switchTab('budgets')"><i data-lucide="pie-chart"></i> Presupuestos</a>
+                <a href="admin.html" id="adminLink" style="display: none;"><i data-lucide="users"></i> Usuarios</a>
             </nav>
+            <div style="margin-top: auto; padding: 1rem;">
+                <button class="btn-secondary" onclick="logout()" style="width: 100%;">
+                    <i data-lucide="log-out" style="width: 18px;"></i> Cerrar Sesión
+                </button>
+            </div>
         </aside>
 
         <!-- Main Content -->
