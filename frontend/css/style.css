@@ -479,6 +479,22 @@ tr:hover {
         margin-bottom: 20px;
     }
 
+    /* Budget Status Colors */
+    .bg-primary {
+        background-color: #4f46e5;
+    }
+
+    .bg-warning {
+        background-color: #f59e0b;
+    }
+
+    /* Orange for 70% */
+    .bg-danger {
+        background-color: #ef4444;
+    }
+
+    /* Red for 90% */
+
     .summary-cards,
     .charts-container,
     .budget-grid {
@@ -562,6 +578,8 @@ tr:hover {
         align-items: center;
         gap: 0.5rem;
         margin-bottom: 1rem;
+        margin-top: 1rem;
+        /* Added spacing */
     }
 
     .btn-back {
@@ -573,8 +591,28 @@ tr:hover {
         align-items: center;
         font-size: 1rem;
         font-weight: 600;
-        padding: 0;
+        padding: 0.5rem;
+        /* Increased padding */
         gap: 0.5rem;
+    }
+
+    /* Hide text on mobile buttons, show only icon */
+    .btn-text {
+        display: none;
+    }
+
+    /* Adjust Header H1 size */
+    h1#userNameDisplay {
+        font-size: 1.2rem !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 180px;
+    }
+
+    /* Adjust main header padding/height */
+    .main-content>header {
+        padding: 0.8rem;
     }
 }
 
@@ -582,5 +620,59 @@ tr:hover {
 @media (min-width: 769px) {
     .mobile-header-nav {
         display: none;
+    }
+}
+
+/* Toast Notification */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    background-color: #333;
+    color: #fff;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    animation: slideIn 0.3s ease-out;
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    min-width: 250px;
+}
+
+.toast.success {
+    background-color: #10b981;
+    /* Green */
+    border-left: 4px solid #059669;
+}
+
+.toast.error {
+    background-color: #ef4444;
+    /* Red */
+    border-left: 4px solid #b91c1c;
+}
+
+.toast.info {
+    background-color: #3b82f6;
+    /* Blue */
+    border-left: 4px solid #2563eb;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
     }
 }

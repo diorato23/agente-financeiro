@@ -235,8 +235,8 @@ def get_summary(db: Session = Depends(get_db)):
             "income_boost": cat_income,
             "spent": cat_expense,
             "percentage": percentage,
-            "alert": percentage >= 80,
-            "critical": percentage >= 100
+            "alert": percentage >= 70,
+            "critical": percentage >= 90
         })
         
     return {

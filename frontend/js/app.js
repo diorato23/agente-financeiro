@@ -144,9 +144,9 @@ function updateDashboard(data) {
 
     activeBudgets.forEach(b => {
         const percentage = Math.min(b.percentage, 100);
-        let statusClass = 'bg-primary';
-        if (b.alert) statusClass = 'bg-warning';
-        if (b.critical) statusClass = 'bg-danger';
+        let statusClass = '';
+        if (b.alert) statusClass = 'warning';
+        if (b.critical) statusClass = 'danger';
 
         // Show Income Boost Note
         let incomeNote = '';
@@ -340,15 +340,34 @@ function setupModals() {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `${API_URL}/transactions/${id}` : `${API_URL}/transactions/`;
 
-        await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
 
-        closeModal('transactionModal');
-        fetchSummary();
-        fetchTransactions();
+            if (!res.ok) {
+                let errorMessage;
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    const errorData = await res.json();
+                    errorMessage = JSON.stringify(errorData.detail || errorData, null, 2);
+                } else {
+                    const text = await res.text();
+                    errorMessage = `Server Error (${res.status}): ${text.substring(0, 100)}...`;
+                }
+                throw new Error(errorMessage);
+            }
+
+            closeModal('transactionModal');
+            showToast('Transacción guardada con éxito', 'success');
+            fetchSummary();
+            fetchTransactions();
+        } catch (error) {
+            console.error(error);
+            showToast(error.message, 'error');
+        }
     });
 
     // Budget Submit
@@ -439,4 +458,28 @@ function updateCharts() {
             }
         }
     });
+}
+
+// Toast Notification System
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return; // Guard clause
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    // Icon based on type
+    let icon = '';
+    if (type === 'success') icon = '<i data-lucide="check-circle" style="margin-right:8px; width:18px;"></i>';
+    if (type === 'error') icon = '<i data-lucide="alert-circle" style="margin-right:8px; width:18px;"></i>';
+
+    toast.innerHTML = `${icon}<span>${message}</span>`;
+
+    container.appendChild(toast);
+    lucide.createIcons();
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
 }

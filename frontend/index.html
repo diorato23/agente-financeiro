@@ -12,6 +12,7 @@
 </head>
 
 <body>
+    <div id="toast-container" class="toast-container"></div>
     <div class="app-container">
         <!-- Overlay -->
         <div class="menu-overlay" id="menuOverlay" onclick="toggleSidebar()"></div>
@@ -49,7 +50,7 @@
                     </h1>
                 </div>
                 <button class="btn-primary" onclick="openTransactionModal()">
-                    <i data-lucide="plus"></i> Nueva Transacción
+                    <i data-lucide="plus"></i> <span class="btn-text">Nueva Transacción</span>
                 </button>
             </header>
 
@@ -123,8 +124,9 @@
                     <h3>Gestión de Presupuestos</h3>
                     <!-- 'Definir Presupuesto' button now styled as secondary/pill -->
                     <button class="btn-secondary" onclick="openBudgetModal()">
-                        <i data-lucide="plus-circle" style="width:18px; margin-right:5px;"></i> Nuevo / Editar
-                        Presupuesto
+                        <i data-lucide="plus-circle" style="width:18px; margin-right:5px;"></i> <span
+                            class="btn-text">Nuevo / Editar
+                            Presupuesto</span>
                     </button>
                 </header>
                 <div class="budget-grid" id="budgetMgmtGrid">

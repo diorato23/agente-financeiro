@@ -12,10 +12,20 @@ def create_transaction(db: Session, transaction: schemas.TransactionCreate):
     db.refresh(db_transaction)
     return db_transaction
 
-def update_transaction(db: Session, transaction_id: int, transaction: schemas.TransactionCreate):
+def update_transaction(db: Session, transaction_id: int, transaction: schemas.TransactionUpdate):
     db_trans = db.query(models.Transaction).filter(models.Transaction.id == transaction_id).first()
     if db_trans:
-        for key, value in transaction.dict().items():
+        update_data = transaction.dict(exclude_unset=True)
+        # Convert date string to date object if present
+        if 'date' in update_data and update_data['date']:
+            from datetime import datetime
+            if isinstance(update_data['date'], str):
+                try:
+                    update_data['date'] = datetime.strptime(update_data['date'], '%Y-%m-%d').date()
+                except ValueError:
+                    pass # Keep as is if format is wrong (SQLAlchemy might handle or fail)
+
+        for key, value in update_data.items():
             setattr(db_trans, key, value)
         db.commit()
         db.refresh(db_trans)
