@@ -1,7 +1,12 @@
+import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from . import models, database, routes, auth
+
+# Ensure data directory exists
+if not os.path.exists("data"):
+    os.makedirs("data")
 
 # Create tables
 models.Base.metadata.create_all(bind=database.engine)
