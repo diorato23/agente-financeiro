@@ -13,8 +13,12 @@ models.Base.metadata.create_all(bind=database.engine)
 
 # Create default admin user
 db = database.SessionLocal()
-auth.create_default_admin(db)
-db.close()
+try:
+    auth.create_default_admin(db)
+except Exception as e:
+    print(f"⚠️ Error creating admin user: {e}")
+finally:
+    db.close()
 
 app = FastAPI(title="Agente Financeiro API", description="API para App Financeiro Colombiano", version="1.0.0")
 
