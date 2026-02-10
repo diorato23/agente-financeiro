@@ -28,6 +28,7 @@
                     Dashboard</a>
                 <a href="#" onclick="switchTab('transactions')"><i data-lucide="list"></i> Transacciones</a>
                 <a href="#" onclick="switchTab('budgets')"><i data-lucide="pie-chart"></i> Presupuestos</a>
+                <a href="#" onclick="openCategoryModal()"><i data-lucide="tag"></i> Categorías</a>
                 <a href="admin.html" id="adminLink" style="display: none;"><i data-lucide="users"></i> Usuarios</a>
             </nav>
             <div style="margin-top: auto; padding: 1rem;">
@@ -164,14 +165,7 @@
                     <label>Categoría</label>
                     <select id="category" required>
                         <option value="" disabled selected>Seleccione una categoría</option>
-                        <option value="Alimentación">Alimentación</option>
-                        <option value="Transporte">Transporte</option>
-                        <option value="Vivienda">Vivienda</option>
-                        <option value="Entretenimiento">Entretenimiento</option>
-                        <option value="Salud">Salud</option>
-                        <option value="Educación">Educación</option>
-                        <option value="Servicios">Servicios</option>
-                        <option value="Otros">Otros</option>
+                        <!-- Options injected dynamically -->
                     </select>
                 </div>
                 <div class="form-group">
@@ -200,14 +194,7 @@
                     <label>Categoría</label>
                     <select id="budgetCategory" required>
                         <option value="" disabled selected>Seleccione una categoría</option>
-                        <option value="Alimentación">Alimentación</option>
-                        <option value="Transporte">Transporte</option>
-                        <option value="Vivienda">Vivienda</option>
-                        <option value="Entretenimiento">Entretenimiento</option>
-                        <option value="Salud">Salud</option>
-                        <option value="Educación">Educación</option>
-                        <option value="Servicios">Servicios</option>
-                        <option value="Otros">Otros</option>
+                        <!-- Options injected dynamically -->
                     </select>
                 </div>
                 <div class="form-group">
@@ -246,6 +233,34 @@
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="closeModal('profileModal')">Cancelar</button>
                     <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="categoryModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close" onclick="closeModal('categoryModal')"
+                style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
+            <h2 style="margin-bottom: 1.5rem;">Gestión de Categorías</h2>
+
+            <div style="margin-bottom: 1.5rem;">
+                <ul id="categoryList" style="list-style: none; padding: 0; max-height: 300px; overflow-y: auto;">
+                    <!-- Categories injected here -->
+                </ul>
+                <p id="noCategoriesMsg" style="text-align: center; color: var(--text-muted); display: none;">No hay
+                    categorías personalizadas.</p>
+            </div>
+
+            <form id="categoryForm" style="border-top: 1px solid var(--border); padding-top: 1rem;">
+                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500;">Nueva
+                    Categoría</label>
+                <div class="form-group" style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="newCategoryName" required placeholder="Ej: Viajes" style="flex:1;">
+                    <button type="submit" class="btn-primary" style="width: auto; padding: 0 1rem;">
+                        <i data-lucide="plus"></i>
+                    </button>
                 </div>
             </form>
         </div>

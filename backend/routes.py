@@ -248,6 +248,32 @@ def get_summary(db: Session = Depends(get_db)):
     }
 
 
+# ============ CATEGORIES ============
+
+@router.get("/categories/", response_model=List[schemas.Category])
+def read_categories(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return crud.get_categories(db, skip=skip, limit=limit)
+
+@router.post("/categories/", response_model=schemas.Category)
+def create_category(category: schemas.CategoryCreate, db: Session = Depends(get_db)):
+    # Check if category already exists
+    # Although database has unique constraint, cleaner to check here or handle exception
+    # For now, let's rely on frontend or DB error, or add a quick check?
+    # Let's add a quick check if simple
+    # But crud.create_category doesn't check.
+    # Let's just call it.
+    try:
+        return crud.create_category(db=db, category=category)
+    except Exception as e:
+         # In case of duplicate, likely IntegrityError
+        raise HTTPException(status_code=400, detail="Category probably already exists")
+
+@router.delete("/categories/{category_id}")
+def delete_category(category_id: int, db: Session = Depends(get_db)):
+    crud.delete_category(db, category_id)
+    return {"ok": True}
+
+
 # ============ PROFILE (deprecated - backward compatibility) ============
 
 @router.get("/profile", response_model=schemas.Profile)

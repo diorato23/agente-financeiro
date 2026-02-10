@@ -27,6 +27,7 @@ const parseAmount = (value) => {
 // State
 let transactions = [];
 let budgets = [];
+let categories = [];
 
 // DOM Elements
 const balanceDisplay = document.getElementById('balanceDisplay');
@@ -35,6 +36,7 @@ const expenseDisplay = document.getElementById('expenseDisplay');
 const transactionList = document.getElementById('transactionList');
 const budgetAlerts = document.getElementById('budgetAlerts');
 const budgetMgmtGrid = document.getElementById('budgetMgmtGrid');
+const categoryList = document.getElementById('categoryList');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -59,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchSummary();
     fetchTransactions();
     fetchBudgets();
+    fetchCategories();
     fetchProfile();
     setupModals();
 });
@@ -112,6 +115,31 @@ async function fetchBudgets() {
         const res = await fetch(`${API_URL}/budgets/`);
         budgets = await res.json();
         renderBudgetsMgmt();
+    } catch (err) { console.error(err); }
+}
+
+async function fetchCategories() {
+    try {
+        const res = await fetch(`${API_URL}/categories/`);
+        categories = await res.json();
+
+        // Auto-populate defaults if empty (DX improvement)
+        if (categories.length === 0) {
+            const defaults = ['Alimentación', 'Transporte', 'Vivienda', 'Entretenimiento', 'Salud', 'Educación', 'Servicios', 'Otros'];
+            for (const name of defaults) {
+                await fetch(`${API_URL}/categories/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+            }
+            // Re-fetch to get IDs
+            const res2 = await fetch(`${API_URL}/categories/`);
+            categories = await res2.json();
+        }
+
+        renderCategoryOptions();
+        renderCategoryList();
     } catch (err) { console.error(err); }
 }
 
@@ -314,12 +342,74 @@ window.deleteBudgetAction = async () => {
 
 window.openProfileModal = () => {
     document.getElementById('profileModal').style.display = 'flex';
-    // Load current name into input
     const currentText = document.getElementById('userNameDisplay').innerText;
-    // Remove 'Hola, ' prefix
     const name = currentText.replace('Hola, ', '');
     document.getElementById('profileName').value = name;
 };
+
+window.openCategoryModal = () => {
+    document.getElementById('categoryModal').style.display = 'flex';
+    renderCategoryList();
+};
+
+window.deleteCategory = async (id) => {
+    if (confirm('¿Eliminar esta categoría? Esto no afectará a las transacciones existentes, pero no podrás seleccionarla para nuevas.')) {
+        try {
+            await fetch(`${API_URL}/categories/${id}`, { method: 'DELETE' });
+            fetchCategories();
+        } catch (err) {
+            console.error(err);
+            showToast('Error al eliminar categoría', 'error');
+        }
+    }
+};
+
+
+function renderCategoryOptions() {
+    const selects = [document.getElementById('category'), document.getElementById('budgetCategory')];
+    selects.forEach(select => {
+        if (!select) return;
+        // Keep the first option (placeholder) and remove others
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+
+        categories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat.name; // Value is name for now as backend expects strings in some places, or ID? 
+            // Wait, previous backend code for Transaction expects 'category' as string. 
+            // Budget expects 'category' as string.
+            // So value should be the name.
+            option.textContent = cat.name;
+            option.dataset.id = cat.id; // Store ID just in case
+            select.appendChild(option);
+        });
+    });
+}
+
+function renderCategoryList() {
+    const list = document.getElementById('categoryList');
+    if (!list) return;
+    list.innerHTML = '';
+
+    categories.forEach(cat => {
+        const li = document.createElement('li');
+        li.style.display = 'flex';
+        li.style.justifyContent = 'space-between';
+        li.style.alignItems = 'center';
+        li.style.padding = '8px 0';
+        li.style.borderBottom = '1px solid var(--border)';
+
+        li.innerHTML = `
+            <span>${cat.name}</span>
+            <button class="btn-delete" onclick="deleteCategory(${cat.id})" style="padding: 4px;">
+                <i data-lucide="trash-2" width="16"></i>
+            </button>
+        `;
+        list.appendChild(li);
+    });
+    lucide.createIcons();
+}
 
 // Form Handlers
 function setupModals() {
@@ -393,6 +483,31 @@ function setupModals() {
         closeModal('budgetModal');
         fetchSummary();
         fetchBudgets();
+    });
+
+    // Category Submit
+    document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nameInput = document.getElementById('newCategoryName');
+        const name = nameInput.value.trim();
+        if (!name) return;
+
+        try {
+            const res = await fetch(`${API_URL}/categories/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+
+            if (!res.ok) throw new Error('Error al crear categoría');
+
+            nameInput.value = '';
+            showToast('Categoría creada', 'success');
+            fetchCategories();
+        } catch (error) {
+            console.error(error);
+            showToast('No se pudo crear (¿ya existe?)', 'error');
+        }
     });
 }
 

@@ -108,6 +108,23 @@ def verify_login(db: Session, login_data: schemas.LoginSchema):
     return False
 
 
+# ============ CATEGORIES ============
+
+def get_categories(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Category).offset(skip).limit(limit).all()
+
+def create_category(db: Session, category: schemas.CategoryCreate):
+    db_category = models.Category(name=category.name)
+    db.add(db_category)
+    db.commit()
+    db.refresh(db_category)
+    return db_category
+
+def delete_category(db: Session, category_id: int):
+    db.query(models.Category).filter(models.Category.id == category_id).delete()
+    db.commit()
+
+
 # ============ USERS ============
 
 def get_user(db: Session, user_id: int):

@@ -38,3 +38,10 @@ class Profile(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, default="ahurtado0129")
     password = Column(String, nullable=True)
+
+
+class Category(Base):
+    __tablename__ = "categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
