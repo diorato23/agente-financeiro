@@ -16,7 +16,7 @@ db = database.SessionLocal()
 try:
     auth.create_default_admin(db)
 except Exception as e:
-    print(f"⚠️ Error creating admin user: {e}")
+    print(f"[AVISO] Error creating admin user: {e}")
 finally:
     db.close()
 
