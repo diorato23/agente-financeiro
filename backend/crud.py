@@ -191,3 +191,143 @@ def toggle_user_active(db: Session, user_id: int):
         db.commit()
         db.refresh(db_user)
     return db_user
+
+
+# ============ TRANSACTION SEARCH & FILTERS ============
+
+def get_transactions_filtered(db: Session, filtros: schemas.TransactionFilter):
+    """Buscar transações com filtros avançados"""
+    from sqlalchemy import or_, and_, desc, asc
+    
+    query = db.query(models.Transaction)
+    
+    # Aplicar filtros
+    if filtros.data_inicio:
+        query = query.filter(models.Transaction.date >= filtros.data_inicio)
+    
+    if filtros.data_fim:
+        query = query.filter(models.Transaction.date <= filtros.data_fim)
+    
+    if filtros.tipo:
+        query = query.filter(models.Transaction.type == filtros.tipo)
+    
+    if filtros.categoria:
+        query = query.filter(models.Transaction.category == filtros.categoria)
+    
+    if filtros.valor_min is not None:
+        query = query.filter(models.Transaction.amount >= filtros.valor_min)
+    
+    if filtros.valor_max is not None:
+        query = query.filter(models.Transaction.amount <= filtros.valor_max)
+    
+    if filtros.busca:
+        # Busca textual na descrição (case-insensitive)
+        query = query.filter(models.Transaction.description.ilike(f"%{filtros.busca}%"))
+    
+    # Ordenação
+    order_column = models.Transaction.date  # padrão
+    if filtros.ordenar_por == "amount":
+        order_column = models.Transaction.amount
+    elif filtros.ordenar_por == "category":
+        order_column = models.Transaction.category
+    elif filtros.ordenar_por == "description":
+        order_column = models.Transaction.description
+    
+    if filtros.ordem == "asc":
+        query = query.order_by(asc(order_column))
+    else:
+        query = query.order_by(desc(order_column))
+    
+    # Paginação
+    total = query.count()
+    transacoes = query.offset(filtros.skip).limit(filtros.limit).all()
+    
+    return transacoes, total
+
+
+def get_transactions_stats(db: Session, transacoes: list = None):
+    """Calcular estatísticas agregadas de transações"""
+    if transacoes is None:
+        transacoes = db.query(models.Transaction).all()
+    
+    if not transacoes:
+        return schemas.TransactionStats(
+            total_receitas=0,
+            total_despesas=0,
+            saldo=0,
+            quantidade_transacoes=0,
+            quantidade_receitas=0,
+            quantidade_despesas=0,
+            media_receitas=0,
+            media_despesas=0,
+            por_categoria={}
+        )
+    
+    receitas = [t for t in transacoes if t.type == 'income']
+    despesas = [t for t in transacoes if t.type == 'expense']
+    
+    total_receitas = sum(t.amount for t in receitas)
+    total_despesas = sum(t.amount for t in despesas)
+    
+    # Estatísticas por categoria
+    por_categoria = {}
+    for t in transacoes:
+        if t.category not in por_categoria:
+            por_categoria[t.category] = {'total': 0, 'quantidade': 0}
+        por_categoria[t.category]['total'] += t.amount
+        por_categoria[t.category]['quantidade'] += 1
+    
+    return schemas.TransactionStats(
+        total_receitas=total_receitas,
+        total_despesas=total_despesas,
+        saldo=total_receitas - total_despesas,
+        quantidade_transacoes=len(transacoes),
+        quantidade_receitas=len(receitas),
+        quantidade_despesas=len(despesas),
+        media_receitas=total_receitas / len(receitas) if receitas else 0,
+        media_despesas=total_despesas / len(despesas) if despesas else 0,
+        por_categoria=por_categoria
+    )
+
+
+def get_transactions_by_period(db: Session, data_inicio, data_fim, agrupar_por: str = "month"):
+    """Obter transações agrupadas por período"""
+    from datetime import datetime
+    from collections import defaultdict
+    
+    transacoes = db.query(models.Transaction).filter(
+        models.Transaction.date >= data_inicio,
+        models.Transaction.date <= data_fim
+    ).all()
+    
+    # Agrupar por período
+    periodos = defaultdict(lambda: {'receitas': 0, 'despesas': 0, 'quantidade': 0})
+    
+    for t in transacoes:
+        # Determinar chave do período
+        if agrupar_por == "day":
+            periodo_key = t.date.strftime("%Y-%m-%d")
+        elif agrupar_por == "week":
+            periodo_key = t.date.strftime("%Y-W%W")
+        else:  # month
+            periodo_key = t.date.strftime("%Y-%m")
+        
+        if t.type == 'income':
+            periodos[periodo_key]['receitas'] += t.amount
+        else:
+            periodos[periodo_key]['despesas'] += t.amount
+        periodos[periodo_key]['quantidade'] += 1
+    
+    # Converter para lista de PeriodoStats
+    evolucao = []
+    for periodo, dados in sorted(periodos.items()):
+        evolucao.append(schemas.PeriodoStats(
+            periodo=periodo,
+            receitas=dados['receitas'],
+            despesas=dados['despesas'],
+            saldo=dados['receitas'] - dados['despesas'],
+            quantidade=dados['quantidade']
+        ))
+    
+    return transacoes, evolucao
+

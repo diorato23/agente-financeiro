@@ -366,7 +366,11 @@ window.deleteCategory = async (id) => {
 
 
 function renderCategoryOptions() {
-    const selects = [document.getElementById('category'), document.getElementById('budgetCategory')];
+    const selects = [
+        document.getElementById('category'),
+        document.getElementById('budgetCategory'),
+        document.getElementById('filterCategoria')  // Adicionar select de filtro
+    ];
     selects.forEach(select => {
         if (!select) return;
         // Keep the first option (placeholder) and remove others
@@ -598,3 +602,218 @@ function showToast(message, type = 'info') {
         setTimeout(() => toast.remove(), 300);
     }, 4000);
 }
+
+
+// ============ FILTROS DE TRANSAÇÕES ============
+
+let currentFilters = {};
+let reportData = null;
+
+window.applyFilters = async () => {
+    const dataInicio = document.getElementById('filterDataInicio').value;
+    const dataFim = document.getElementById('filterDataFim').value;
+    const tipo = document.getElementById('filterTipo').value;
+    const categoria = document.getElementById('filterCategoria').value;
+    const busca = document.getElementById('filterBusca').value;
+
+    // Construir query string
+    const params = new URLSearchParams();
+    if (dataInicio) params.append('data_inicio', dataInicio);
+    if (dataFim) params.append('data_fim', dataFim);
+    if (tipo) params.append('tipo', tipo);
+    if (categoria) params.append('categoria', categoria);
+    if (busca) params.append('busca', busca);
+
+    // Salvar filtros atuais
+    currentFilters = { dataInicio, dataFim, tipo, categoria, busca };
+
+    try {
+        const res = await fetch(`${API_URL}/transactions/?${params.toString()}`);
+        transactions = await res.json();
+        renderTransactions();
+        updateFilterIndicators();
+        showToast('Filtros aplicados', 'success');
+    } catch (err) {
+        console.error(err);
+        showToast('Error al aplicar filtros', 'error');
+    }
+};
+
+window.clearFilters = () => {
+    document.getElementById('filterDataInicio').value = '';
+    document.getElementById('filterDataFim').value = '';
+    document.getElementById('filterTipo').value = '';
+    document.getElementById('filterCategoria').value = '';
+    document.getElementById('filterBusca').value = '';
+    currentFilters = {};
+    updateFilterIndicators();
+    fetchTransactions();
+    showToast('Filtros limpiados', 'success');
+};
+
+function updateFilterIndicators() {
+    const indicators = document.getElementById('filterIndicators');
+    const hasFilters = Object.values(currentFilters).some(v => v);
+
+    if (!hasFilters) {
+        indicators.style.display = 'none';
+        return;
+    }
+
+    indicators.style.display = 'block';
+    let html = '<div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">';
+
+    if (currentFilters.dataInicio) html += `<span class="badge">Desde: ${currentFilters.dataInicio}</span>`;
+    if (currentFilters.dataFim) html += `<span class="badge">Hasta: ${currentFilters.dataFim}</span>`;
+    if (currentFilters.tipo) html += `<span class="badge">Tipo: ${currentFilters.tipo === 'income' ? 'Ingreso' : 'Gasto'}</span>`;
+    if (currentFilters.categoria) html += `<span class="badge">Categoría: ${currentFilters.categoria}</span>`;
+    if (currentFilters.busca) html += `<span class="badge">Busca: "${currentFilters.busca}"</span>`;
+
+    html += '</div>';
+    indicators.innerHTML = html;
+}
+
+
+// ============ RELATÓRIOS ============
+
+window.generateReport = async () => {
+    const dataInicio = document.getElementById('reportDataInicio').value;
+    const dataFim = document.getElementById('reportDataFim').value;
+    const agrupar = document.getElementById('reportAgrupar').value;
+
+    if (!dataInicio || !dataFim) {
+        showToast('Por favor, seleccione el período', 'error');
+        return;
+    }
+
+    try {
+        const res = await fetch(
+            `${API_URL}/transactions/report?data_inicio=${dataInicio}&data_fim=${dataFim}&agrupar_por=${agrupar}`
+        );
+        reportData = await res.json();
+        renderReport(reportData);
+        showToast('Informe generado', 'success');
+    } catch (err) {
+        console.error(err);
+        showToast('Error al generar informe', 'error');
+    }
+};
+
+function renderReport(data) {
+    // Mostrar cards de estatísticas
+    document.getElementById('reportStatsCards').style.display = 'grid';
+    document.getElementById('reportTotalReceitas').textContent = formatCurrency(data.estatisticas.total_receitas);
+    document.getElementById('reportTotalDespesas').textContent = formatCurrency(data.estatisticas.total_despesas);
+    document.getElementById('reportSaldo').textContent = formatCurrency(data.estatisticas.saldo);
+    document.getElementById('reportQuantidade').textContent = data.estatisticas.quantidade_transacoes;
+
+    // Renderizar gráfico de evolução
+    document.getElementById('reportChartCard').style.display = 'block';
+    renderReportChart(data.evolucao_temporal);
+
+    // Renderizar top categorias
+    document.getElementById('reportTopCategories').style.display = 'grid';
+    renderTopCategories(data.top_categorias_despesas, 'topCategoriasDespesas');
+    renderTopCategories(data.top_categorias_receitas, 'topCategoriasReceitas');
+}
+
+let reportChart = null;
+
+function renderReportChart(evolucao) {
+    if (reportChart) reportChart.destroy();
+
+    const ctx = document.getElementById('reportChart').getContext('2d');
+    const labels = evolucao.map(e => e.periodo);
+    const receitas = evolucao.map(e => e.receitas);
+    const despesas = evolucao.map(e => e.despesas);
+
+    reportChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Ingresos',
+                    data: receitas,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Gastos',
+                    data: despesas,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+}
+
+function renderTopCategories(categorias, elementId) {
+    const container = document.getElementById(elementId);
+    if (!categorias || categorias.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">Sin datos</p>';
+        return;
+    }
+
+    container.innerHTML = categorias.map(cat => `
+        <div style="display: flex; justify-content: space-between; padding: 0.75rem; border-bottom: 1px solid var(--border);">
+            <span style="font-weight: 500;">${cat.categoria}</span>
+            <div style="text-align: right;">
+                <div style="font-weight: 600; color: var(--primary);">${formatCurrency(cat.total)}</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">${cat.quantidade} transacciones</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+
+// ============ EXPORTAÇÃO CSV ============
+
+window.exportToCSV = () => {
+    if (!reportData || !reportData.transacoes) {
+        showToast('Genere un informe primero', 'error');
+        return;
+    }
+
+    // Criar CSV
+    const headers = ['Fecha', 'Descripción', 'Categoría', 'Tipo', 'Monto'];
+    const rows = reportData.transacoes.map(t => [
+        t.date,
+        t.description,
+        t.category,
+        t.type === 'income' ? 'Ingreso' : 'Gasto',
+        t.amount
+    ]);
+
+    let csvContent = headers.join(',') + '\n';
+    rows.forEach(row => {
+        csvContent += row.map(cell => `"${cell}"`).join(',') + '\n';
+    });
+
+    // Download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `informe_${reportData.data_inicio}_${reportData.data_fim}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast('CSV exportado con éxito', 'success');
+};
+

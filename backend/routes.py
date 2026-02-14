@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from typing import List
-from datetime import timedelta
+from typing import List, Optional
+from datetime import timedelta, date
 from . import crud, models, schemas, database, auth
 
 router = APIRouter()
@@ -160,8 +160,43 @@ def create_transaction(transaction: schemas.TransactionCreate, db: Session = Dep
     return crud.create_transaction(db=db, transaction=transaction)
 
 @router.get("/transactions/", response_model=List[schemas.Transaction])
-def read_transactions(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return crud.get_transactions(db, skip=skip, limit=limit)
+def read_transactions(
+    skip: int = 0, 
+    limit: int = 100,
+    # Filtros opcionais
+    data_inicio: Optional[date] = None,
+    data_fim: Optional[date] = None,
+    tipo: Optional[str] = None,
+    categoria: Optional[str] = None,
+    valor_min: Optional[float] = None,
+    valor_max: Optional[float] = None,
+    busca: Optional[str] = None,
+    ordenar_por: str = "date",
+    ordem: str = "desc",
+    db: Session = Depends(get_db)
+):
+    """Listar transações com filtros opcionais"""
+    # Se houver filtros, usar busca avançada
+    if any([data_inicio, data_fim, tipo, categoria, valor_min is not None, 
+            valor_max is not None, busca, ordenar_por != "date", ordem != "desc"]):
+        filtros = schemas.TransactionFilter(
+            data_inicio=data_inicio,
+            data_fim=data_fim,
+            tipo=tipo,
+            categoria=categoria,
+            valor_min=valor_min,
+            valor_max=valor_max,
+            busca=busca,
+            ordenar_por=ordenar_por,
+            ordem=ordem,
+            skip=skip,
+            limit=limit
+        )
+        transacoes, _ = crud.get_transactions_filtered(db, filtros)
+        return transacoes
+    else:
+        # Busca simples original
+        return crud.get_transactions(db, skip=skip, limit=limit)
 
 @router.put("/transactions/{transaction_id}", response_model=schemas.Transaction)
 def update_transaction(transaction_id: int, transaction: schemas.TransactionUpdate, db: Session = Depends(get_db)):
@@ -174,6 +209,89 @@ def update_transaction(transaction_id: int, transaction: schemas.TransactionUpda
 def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
     crud.delete_transaction(db, transaction_id)
     return {"ok": True}
+
+
+# ============ TRANSACTION SEARCH & REPORTS ============
+
+@router.post("/transactions/search", response_model=schemas.TransactionSearchResponse)
+def search_transactions(filtros: schemas.TransactionFilter, db: Session = Depends(get_db)):
+    """Busca avançada de transações com estatísticas"""
+    import math
+    
+    # Buscar transações filtradas
+    transacoes, total = crud.get_transactions_filtered(db, filtros)
+    
+    # Calcular estatísticas
+    estatisticas = crud.get_transactions_stats(db, transacoes)
+    
+    # Calcular paginação
+    total_paginas = math.ceil(total / filtros.limit) if filtros.limit > 0 else 1
+    pagina_atual = (filtros.skip // filtros.limit) + 1 if filtros.limit > 0 else 1
+    
+    return schemas.TransactionSearchResponse(
+        transacoes=transacoes,
+        total=total,
+        pagina_atual=pagina_atual,
+        total_paginas=total_paginas,
+        estatisticas=estatisticas
+    )
+
+
+@router.get("/transactions/report", response_model=schemas.TransactionReport)
+def get_transactions_report(
+    data_inicio: date,
+    data_fim: date,
+    agrupar_por: str = "month",
+    db: Session = Depends(get_db)
+):
+    """Gerar relatório de transações com análise temporal"""
+    # Obter transações e evolução temporal
+    transacoes, evolucao_temporal = crud.get_transactions_by_period(
+        db, data_inicio, data_fim, agrupar_por
+    )
+    
+    # Calcular estatísticas gerais
+    estatisticas = crud.get_transactions_stats(db, transacoes)
+    
+    # Top categorias de despesas
+    despesas = [t for t in transacoes if t.type == 'expense']
+    categorias_despesas = {}
+    for t in despesas:
+        if t.category not in categorias_despesas:
+            categorias_despesas[t.category] = {'categoria': t.category, 'total': 0, 'quantidade': 0}
+        categorias_despesas[t.category]['total'] += t.amount
+        categorias_despesas[t.category]['quantidade'] += 1
+    
+    top_categorias_despesas = sorted(
+        categorias_despesas.values(), 
+        key=lambda x: x['total'], 
+        reverse=True
+    )[:5]
+    
+    # Top categorias de receitas
+    receitas = [t for t in transacoes if t.type == 'income']
+    categorias_receitas = {}
+    for t in receitas:
+        if t.category not in categorias_receitas:
+            categorias_receitas[t.category] = {'categoria': t.category, 'total': 0, 'quantidade': 0}
+        categorias_receitas[t.category]['total'] += t.amount
+        categorias_receitas[t.category]['quantidade'] += 1
+    
+    top_categorias_receitas = sorted(
+        categorias_receitas.values(), 
+        key=lambda x: x['total'], 
+        reverse=True
+    )[:5]
+    
+    return schemas.TransactionReport(
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+        transacoes=transacoes,
+        estatisticas=estatisticas,
+        evolucao_temporal=evolucao_temporal,
+        top_categorias_despesas=top_categorias_despesas,
+        top_categorias_receitas=top_categorias_receitas
+    )
 
 
 # ============ BUDGETS ============
