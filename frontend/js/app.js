@@ -398,16 +398,10 @@ function renderCategoryList() {
 
     categories.forEach(cat => {
         const li = document.createElement('li');
-        li.style.display = 'flex';
-        li.style.justifyContent = 'space-between';
-        li.style.alignItems = 'center';
-        li.style.padding = '8px 0';
-        li.style.borderBottom = '1px solid var(--border)';
-
         li.innerHTML = `
             <span>${cat.name}</span>
-            <button class="btn-delete" onclick="deleteCategory(${cat.id})" style="padding: 4px;">
-                <i data-lucide="trash-2" width="16"></i>
+            <button class="btn-delete" onclick="deleteCategory(${cat.id})" title="Eliminar categoría">
+                <i data-lucide="trash-2" width="18"></i>
             </button>
         `;
         list.appendChild(li);
