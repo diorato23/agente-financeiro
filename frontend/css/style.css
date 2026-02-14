@@ -685,6 +685,10 @@ tr:hover {
     list-style: none;
     padding: 0;
     margin-top: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Remove scrollbar horizontal */
 }
 
 #categoryList li {
@@ -735,4 +739,22 @@ tr:hover {
 
 #categoryList .btn-delete:active {
     transform: scale(0.95);
+}
+
+/* Scrollbar vertical personalizada (discreta) */
+#categoryList::-webkit-scrollbar {
+    width: 4px;
+}
+
+#categoryList::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#categoryList::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 10px;
+}
+
+#categoryList::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
 }
