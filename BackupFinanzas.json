@@ -1,0 +1,2201 @@
+{
+  "name": "BackupFinanzas",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        2384,
+        1456
+      ],
+      "id": "5366c32b-5e19-499e-b1f2-64e8ad372b8b",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "kzsagMP6DxHMcdAf",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.userPrompt  }}",
+        "options": {
+          "systemMessage": "=Eres un asistente financiero personal en Colombia 🇨🇴.\nIdioma: ESPAÑOL (Colombiano).\nPersonalidad: Amigable, usa emojis 🤩.\nOBJETIVOS:\n- Transacciones (Gastos/Ingresos).\n- Presupuestos (Crear/Editar/Borrar).\n- Borrar última transacción.\n- Chat.\nOUTPUT JSON OBLIGATORIO:\n1. PRESUPUESTOS (Budgets):\n- Crear: tipo budget_create, categoría Comida, monto 500000, mensaje \"✅ Presupuesto creado.\"\n- Editar: tipo budget_update, categoría Comida, monto 600000, mensaje \"✅ Presupuesto actualizado.\"\n- Borrar: tipo budget_delete, categoría Comida, mensaje \"🗑️ Presupuesto borrado.\"\n2. TRANSACCIONES:\n- Gasto: tipo expense, monto 20000, categoría Comida, descripción Pizza, mensaje \"✅ Anotado!\"\n- Ingreso (Ingressos/Ganhei): tipo income, monto 50000, categoría Salario, descripción Sueldo, mensaje \"💰 Dinero extra!\"\n- Borrar Última: tipo transaction_delete_last, mensaje \"🗑️ Borrando última transacción.\"\n3. Se o usuário quiser mudar/alterar uma transação anterior, use type: 'transaction_update_last' e envie os novos dados\n4. CHAT:\n- tipo chat, mensaje \"Hola! 👋\"\n\n⚠️ IMPORTANTE: As chaves do JSON devem ser SEMPRE em inglês: type, amount, category, description, message. NUNCA traduza as chaves para tipo ou mensaje.\n\nOBJETIVO: Clasificar la intención del usuario y extraer datos con precisión.\n\nMODO 1: TRANSACCIÓN\n- Si el usuario menciona dinero entrando (gané, me pagaron, recibí, salario): type = 'income'.\n- Si el usuario menciona gastos (gaste, compré, pagué, se me fueron): type = 'expense'.\n- Si no se especifica categoría, usa 'General' (NUNCA inventes 'Comida' si no se menciona).\n- Reconoce 'mil' como 000 (ej: 200 mil = 200000).\nMODO 2: ANÁLISIS\n- Si el usuario pregunta \"cuánto gasté\", \"mi saldo\", \"resumen de la semana\", \"cómo voy\":\n- Retorna SOLAMENTE: { \"type\": \"analysis\", \"description\": \"analysis_request\" \n-{ \"type\": \"analysis\", \"description\": \"analysis_request\", \"message\": \"Analizando tus finanzas...\" }\nSALIDA JSON:\n{ \"amount\": number, \"category\": \"string\", \"description\": \"string\", \"type\": \"expense/income\" }\n- NO respondas con texto libre. Si la intención es analizar, retorna SIEMPRE el JSON anterior.\n-Abaixo estão as transações do usuário recuperadas do banco de dados:\n{{ JSON.stringify($json) }}\nResponda a pergunta do usuário de forma resumida.\nDiga o total gasto, total ganho e o saldo final (Receitas - Despesas).\nResponda em ESPANHOL.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2352,
+        960
+      ],
+      "id": "c730a410-b8dc-49ac-bbdf-e418d67f4302",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.wa_id }}",
+        "tableName": "finanzas_n8n_chat_histories"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        2144,
+        1360
+      ],
+      "id": "6c2ae635-ba7e-4b36-90d6-e1875f32a9a6",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "5uy59j8UwRyaeB9l",
+          "name": "Postgres Nanos Burguer"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://finanzas.ktuche.com/transactions/",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "category",
+              "value": "={{ $json.category }}"
+            },
+            {
+              "name": "type",
+              "value": "={{ $json.type }}"
+            },
+            {
+              "name": "date",
+              "value": "={{ $today.format('yyyy-MM-dd') }}"
+            },
+            {
+              "name": "amount",
+              "value": "={{ $json.amount }}"
+            },
+            {
+              "name": "description",
+              "value": "={{ $json.description }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3552,
+        384
+      ],
+      "id": "b137af4b-2670-419b-95f9-acaa7e853724",
+      "name": "Cadastrar"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].text.body }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "id": "597fcbc2-2e66-488a-bd27-5a4e9bffdf68"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text-message"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e3c4e9e3-512f-438d-82ea-a577f1be8227",
+                    "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].image }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "image-message"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "550765e1-5fea-4b00-b4cc-5786ea3d60ce",
+                    "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].document.mime_type }}",
+                    "rightValue": "image/",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "image-document"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "75cdb764-bf13-4be2-8b37-705a3b0bf7ed",
+                    "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].audio }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "object",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "audio-message"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        976,
+        928
+      ],
+      "id": "99b0e3a7-3b7e-46e9-b78c-2a6e48c0ead0",
+      "name": "¿Qué tipo de mensaje es?"
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $('WhatsApp Trigger').item.json.messages[0].image.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        864
+      ],
+      "id": "838ecc2a-e09c-47ab-afa9-2a58e656307f",
+      "name": "Descargar media",
+      "webhookId": "5d3f7570-4fb1-4f0a-a2de-1a3a8e0b9665",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Jl5aH7LJ3O7m8M3p",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1424,
+        864
+      ],
+      "id": "38faa4ff-bb7a-4f4b-a45f-25f13cfccfe0",
+      "name": "Obtener archivo",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "R1qKKa1g1IqG8OAo",
+          "name": "Whatsapp Bearer Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "text": "={{ $('WhatsApp Trigger').item.json.messages[0].image.caption || \n'¿Qué hay en la imagen?'\n\n}}",
+        "inputType": "base64",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1648,
+        864
+      ],
+      "id": "30a4015e-228a-4021-bdd8-db0bbe795330",
+      "name": "Analizar imagen",
+      "credentials": {
+        "openAiApi": {
+          "id": "kzsagMP6DxHMcdAf",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"userPrompt\": {{ $('WhatsApp Trigger').item.json.messages[0].document.caption }},\n  \"type\": \"text-message\",\n  \"ai\": {{ $json.content.toJsonString() }},\n  \"wa_id\": {{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1872,
+        864
+      ],
+      "id": "3f6bfbc7-a3a9-4141-8571-8ec485193bb8",
+      "name": "Extraer información de persona1"
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $('WhatsApp Trigger').item.json.messages[0].document.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        1056
+      ],
+      "id": "aae6a168-fac9-4a69-8081-d8258c5f79f1",
+      "name": "Descargar media1",
+      "webhookId": "5d3f7570-4fb1-4f0a-a2de-1a3a8e0b9665",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Jl5aH7LJ3O7m8M3p",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1424,
+        1056
+      ],
+      "id": "2b5cfb47-e96d-4a08-9f06-9ab5c1845445",
+      "name": "Obtener archivo1",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "R1qKKa1g1IqG8OAo",
+          "name": "Whatsapp Bearer Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "text": "={{ $('WhatsApp Trigger').item.json.messages[0].document.caption || \n'¿Qué hay en la imagen?'\n\n}}",
+        "inputType": "base64",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1648,
+        1056
+      ],
+      "id": "50fd3734-6c02-403d-8ccd-479b1b8b201e",
+      "name": "Analizar imagen1",
+      "credentials": {
+        "openAiApi": {
+          "id": "kzsagMP6DxHMcdAf",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"userPrompt\": {{ $('WhatsApp Trigger').item.json.messages[0].document.caption?.toJsonString() || '¿Qué hay en la imagen?' }},\n  \"type\": \"text-message\",\n  \"ai\": {{ $json.content.toJsonString() }},\n  \"wa_id\": {{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1872,
+        1056
+      ],
+      "id": "3b71f04d-2bed-42b2-8e3e-4c4f22ab2f00",
+      "name": "Extraer información de persona2"
+    },
+    {
+      "parameters": {
+        "resource": "media",
+        "operation": "mediaUrlGet",
+        "mediaGetId": "={{ $('WhatsApp Trigger').item.json.messages[0].audio.id }}"
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        1248
+      ],
+      "id": "1dfc4b5b-a99b-4b22-a088-17732c481d82",
+      "name": "Descargar media2",
+      "webhookId": "5d3f7570-4fb1-4f0a-a2de-1a3a8e0b9665",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Jl5aH7LJ3O7m8M3p",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1424,
+        1248
+      ],
+      "id": "db192b0a-bee0-4369-9c66-1a248d582494",
+      "name": "Obtener archivo2",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "R1qKKa1g1IqG8OAo",
+          "name": "Whatsapp Bearer Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"userPrompt\": {{ $json.text.toJsonString() }},\n  \"type\": \"audio-message\",\n  \"ai\": \"\",\n  \"wa_id\": {{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1872,
+        1248
+      ],
+      "id": "927f2a03-8de8-496a-96f5-375b41133731",
+      "name": "Extraer información de persona3"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        1648,
+        1248
+      ],
+      "id": "0ecff24b-56cf-4e4c-9cff-735e0b31a71e",
+      "name": "Transcribir audio",
+      "credentials": {
+        "openAiApi": {
+          "id": "kzsagMP6DxHMcdAf",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "c5c7886a-c819-4f68-9475-d582e4dccc55",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "ignoreCase": false
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        528,
+        960
+      ],
+      "id": "3d0c0ecd-86d6-4cbc-9c15-c09a534e57f2",
+      "name": "If",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "tableId": "chats",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "phone",
+              "fieldValue": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}"
+            },
+            {
+              "fieldId": "conversation_id",
+              "fieldValue": "\"inicio\""
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        848,
+        1344
+      ],
+      "id": "0f136a62-8070-4fbd-aa9f-4921c2d26a39",
+      "name": "Create a row",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "ckTZnsvDuhQVoRFR",
+          "name": "Supabase Nano's Burgues"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "clientes",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "nome",
+              "keyValue": "={{ $json.profile.name }}"
+            },
+            {
+              "keyName": "telefone",
+              "keyValue": "={{ $json.wa_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        304,
+        960
+      ],
+      "id": "f59389da-dccc-483d-a92d-8733c9b7fb17",
+      "name": "Get a row",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "ckTZnsvDuhQVoRFR",
+          "name": "Supabase Nano's Burgues"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "616aca1f-0193-467b-9a80-87d1dc1c945a",
+              "name": "profile.name",
+              "value": "={{ $json.contacts[0].profile.name }}",
+              "type": "string"
+            },
+            {
+              "id": "b867ce0b-2f71-4f53-8bd2-1073e189311d",
+              "name": "wa_id",
+              "value": "={{ $json.contacts[0].wa_id }}",
+              "type": "string"
+            },
+            {
+              "id": "35ee6f31-021b-45b3-b5ee-d1a38cae6f12",
+              "name": "text.body",
+              "value": "={{ $json.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "33cf5a90-d09f-45ba-aaba-9d0a261ad6ba",
+              "name": "type",
+              "value": "={{ $json.messages[0].type }}",
+              "type": "string"
+            },
+            {
+              "id": "0f39d6f8-701a-40fb-baf9-0bcff28686bb",
+              "name": "messages[0].id",
+              "value": "={{ $json.messages[0].id }}",
+              "type": "string"
+            },
+            {
+              "id": "136d198a-fc1b-49ab-ac3c-c93009f6a79e",
+              "name": "phoneFrom",
+              "value": "={{ $json.messages[0].from }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        80,
+        960
+      ],
+      "id": "57285002-6c84-45fd-861a-c912d81f9b16",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"userPrompt\": \"{{ $('WhatsApp Trigger').item.json.messages[0].text.body }}\",\n  \"type\": \"text-message\",\n  \"ai\": \"\",\n  \"name\": {{ $('WhatsApp Trigger').item.json.contacts[0].profile.name }},\n  \"wa_id\": {{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1872,
+        672
+      ],
+      "id": "103d1524-fb4a-402d-8c0c-8d90ceb794f4",
+      "name": "Extraer información de persona4"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputs = $input.all();\n\n// tenta achar o item que veio do Supabase\nconst supabaseItem = inputs.find(\n  i => i.json && i.json.estado_conversa !== undefined\n);\n\n// tenta achar o item do WhatsApp\nconst whatsappItem = inputs.find(\n  i => i.json && i.json.wa_id !== undefined\n);\n\nreturn {\n  userPrompt: whatsappItem?.json.userPrompt,\n  type: whatsappItem?.json.type,\n  ai: whatsappItem?.json.ai,\n  name: whatsappItem?.json.name,\n  wa_id: whatsappItem?.json.wa_id,\n  estado_conversa: supabaseItem?.json.estado_conversa ?? \"inicio\"\n};\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2096,
+        960
+      ],
+      "id": "a8f4a85e-86e5-4aaf-a13d-a0245ecc30a0",
+      "name": "Extraer y unir datos"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        960
+      ],
+      "id": "ca133b48-6bc6-48bd-b940-264a151e31d5",
+      "name": "WhatsApp Trigger",
+      "webhookId": "e74d8336-c773-429d-bc04-b0cec73067cd",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "15oO7pyib9J95bKc",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type || JSON.parse($json.output).type  }}",
+                    "rightValue": "(expense|income)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    },
+                    "id": "c1e58c7b-f032-47cf-bb0d-d9986a95cab5"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cadastrar"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "658fe3f3-9960-46df-82d3-01b8aebc9042",
+                    "leftValue": "={{ $json.type || JSON.parse($json.output).type  }}",
+                    "rightValue": "transaction_delete_last",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "apaga útlima compra"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "0b730897-19b3-45b1-baaa-f861745561ff",
+                    "leftValue": "={{ $json.type || JSON.parse($json.output).type  }}",
+                    "rightValue": "budget_create",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Cria novo orçamento"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "a234a4c9-bff9-449e-8161-683ae6570be3",
+                    "leftValue": "={{ $json.type || JSON.parse($json.output).type  }}",
+                    "rightValue": "budget_update|budget_delete",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Edita/Apaga orçamentos"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "24036fb9-5eb9-4919-9625-6ca06858c469",
+                    "leftValue": "={{ $('Code in JavaScript').item.json.type || JSON.parse($json.output).type  }}",
+                    "rightValue": "chat",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Só conversa"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b77ebe8f-c73d-4a0a-9cae-10e3d207b5ef",
+                    "leftValue": "={{ $json.type || JSON.parse($json.output).type  }}",
+                    "rightValue": "transaction_update_last",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "update_transactions"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "9efcad0a-d4eb-4eb0-a271-133f3a21e0c4",
+                    "leftValue": "={{  $('Code in JavaScript').item.json.type|| JSON.parse($json.output).type  }}",
+                    "rightValue": "analysis",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Análise de Saldo"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        3328,
+        880
+      ],
+      "id": "bf30ecdd-3139-4f43-b2e9-889bdced3afc",
+      "name": "Switch",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "914691621734879",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+        "textBody": "={{ $('Code in JavaScript').item.json.message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        3552,
+        1152
+      ],
+      "id": "74196d96-9887-4522-a315-831eba6a8fe1",
+      "name": "Send message",
+      "webhookId": "59093ce4-bf5c-438f-a5b8-a92231a64be9",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Jl5aH7LJ3O7m8M3p",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://finanzas.ktuche.com/transactions/?limit=1",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "description",
+              "value": "={{ JSON.parse($json.output).description }}"
+            },
+            {
+              "name": "amount",
+              "value": "={{ JSON.parse($json.output).amount }}"
+            },
+            {
+              "name": "category",
+              "value": "={{ JSON.parse($json.output).category }}"
+            },
+            {
+              "name": "type",
+              "value": "={{ JSON.parse($json.output).type || 'expense' }}"
+            },
+            {
+              "name": "date",
+              "value": "={{ $today.format('yyyy-MM-dd') }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3552,
+        576
+      ],
+      "id": "e781225e-1ab6-4296-ad98-c6aa75f4abbf",
+      "name": "buscar último"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://finanzas.ktuche.com/transactions/budgets/{{ $json.id }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        4208,
+        1072
+      ],
+      "id": "29502bf7-3d4c-462a-970e-adef90b8e173",
+      "name": "apagar"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "914691621734879",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').first().json.contacts[0].wa_id }}",
+        "textBody": "=🗑️ *Pronto! Apaguei a última transação:*\n\n📝 Item: {{ $('buscar último').item.json.description }}\n💰 Valor: ${{ $('buscar último').item.json.amount }}\n📂 Categoria: {{ $('buscar último').item.json.category }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        4432,
+        1072
+      ],
+      "id": "4294383d-f4a1-4072-8567-3e27a273a320",
+      "name": "Send message1",
+      "webhookId": "59093ce4-bf5c-438f-a5b8-a92231a64be9",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Jl5aH7LJ3O7m8M3p",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://agente-financeiro:8000/budgets/{{ $json.id }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "limit_amount",
+              "value": "={{ $json.new_limit }}\n"
+            },
+            {
+              "name": "date",
+              "value": "={{ $today.format('yyyy-MM-dd') }}"
+            },
+            {
+              "name": "category",
+              "value": "={{ $('Edit Fields2').first().json.category }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        4208,
+        848
+      ],
+      "id": "c28f7b76-15de-442f-97b2-66b6d7626202",
+      "name": "criar/editar orçamento"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "914691621734879",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').first().json.contacts[0].wa_id }}",
+        "textBody": "= {{ $('Edit Fields2').first().json.message }}\n\n📂 Categoria: {{ $json.category }}\n🎯 Limite: ${{ $json.limit_amount }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        4432,
+        848
+      ],
+      "id": "84f5e0f3-c63d-45ec-8676-2c491aa39b73",
+      "name": "Send message2",
+      "webhookId": "59093ce4-bf5c-438f-a5b8-a92231a64be9",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Jl5aH7LJ3O7m8M3p",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://finanzas.ktuche.com/transactions/budgets/",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "description",
+              "value": "={{ JSON.parse($json.output).description }}"
+            },
+            {
+              "name": "amount",
+              "value": "={{ JSON.parse($json.output).amount }}"
+            },
+            {
+              "name": "category",
+              "value": "={{ JSON.parse($json.output).category }}"
+            },
+            {
+              "name": "type",
+              "value": "={{ JSON.parse($json.output).type || 'expense' }}"
+            },
+            {
+              "name": "date",
+              "value": "={{ $today.format('yyyy-MM-dd') }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3552,
+        960
+      ],
+      "id": "75e6ccc2-c0f8-4791-adb0-f11d1a78ed00",
+      "name": "Listar Budgets"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Acessa o JSON limpo do node \"Code in JavaScript\"\n// (Certifique-se que o nome do node anterior é exatamente \"Code in JavaScript\")\nconst aiOutput = $('Code in JavaScript').first().json; \n\nconst targetCategory = aiOutput.category.toLowerCase();\n\n// 2. Acessa a lista de budgets (que veio do input deste node \"Listar Budgets\")\nconst budgets = items.map(item => item.json);\n\n// 3. Procura se já existe um budget com essa categoria\nconst match = budgets.find(b => b.category.toLowerCase() === targetCategory);\n\nif (match) {\n  // Se achou, retorna o ID para editar\n  return [{\n    json: {\n      id: match.id,\n      new_limit: aiOutput.amount,\n      action: aiOutput.type\n    }\n  }];\n}\n\nif (aiOutput.type === 'budget_create') {\n  // Se não achou e é para criar, marca como NEW\n  return [{\n    json: {\n      id: 'NEW',\n      new_limit: aiOutput.amount,\n      action: aiOutput.type\n    }\n  }];\n}\n\n// Se tentou editar algo que não existe\nthrow new Error(`Não encontrei nenhum orçamento para a categoria: ${targetCategory}`);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3776,
+        960
+      ],
+      "id": "0e29fa84-9caa-4485-b30d-4ade513df4b2",
+      "name": "Achar ID"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "332cb458-426d-44d9-ac6d-fae1d42824ee",
+              "leftValue": "={{ $('AI Agent').first().item.json.output }}",
+              "rightValue": "budget_update",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        4000,
+        960
+      ],
+      "id": "77bf1ead-1030-4fa4-acce-d13dc8be261a",
+      "name": "Editar ou Apagar?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "413fff19-1a0b-4847-9332-246a09c103e8",
+              "name": "type",
+              "value": "={{ JSON.parse($json.output.replace(/```json/g, '').replace(/```/g, '').trim()).type }}",
+              "type": "string"
+            },
+            {
+              "id": "1c7670b3-e39b-4532-9bab-51a936512c67",
+              "name": "amount",
+              "value": "={{ JSON.parse($json.output.replace(/```json/g, '').replace(/```/g, '').trim()).amount }}",
+              "type": "string"
+            },
+            {
+              "id": "71ae6055-7d88-4a26-89be-e1caa9c8d6a4",
+              "name": "category",
+              "value": "={{ JSON.parse($json.output.replace(/```json/g, '').replace(/```/g, '').trim()).category }}",
+              "type": "string"
+            },
+            {
+              "id": "b9a8ab4d-e76f-406f-8888-b66c4216d6a8",
+              "name": "message",
+              "value": "={{ JSON.parse($json.output.replace(/```json/g, '').replace(/```/g, '').trim()).message }}",
+              "type": "string"
+            },
+            {
+              "id": "fb528ca5-b3f4-4b34-bdf7-8ecf4fb11e58",
+              "name": "description",
+              "value": "={{ JSON.parse($json.output.replace(/```json/g, '').replace(/```/g, '').trim()).description }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        160
+      ],
+      "id": "acd14ba2-55e4-4b6c-9b32-e64579140810",
+      "name": "Edit Fields2",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://finanzas.ktuche.com/transactions/{{ $json.id }}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3776,
+        576
+      ],
+      "id": "dc6ff24e-158d-4d2b-af12-325b17c0b8da",
+      "name": "Deletar Transação"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "914691621734879",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+        "textBody": "=🗑️ Transação apagada: {{ $('buscar último').first().json.description }}\n💰 Valor: {{ $('buscar último').item.json.amount }}\n📂 Categoria: {{ $('buscar último').item.json.category }}\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        4000,
+        576
+      ],
+      "id": "87c03d9e-32d3-463e-adeb-493e5228abe7",
+      "name": "Send message3",
+      "webhookId": "59093ce4-bf5c-438f-a5b8-a92231a64be9",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Jl5aH7LJ3O7m8M3p",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://finanzas.ktuche.com/budgets/",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "category",
+              "value": "={{ $json.category }}"
+            },
+            {
+              "name": "limit_amount",
+              "value": "={{ $json.amount }}"
+            },
+            {
+              "name": "category",
+              "value": "={{ $json.category }}"
+            },
+            {
+              "name": "type",
+              "value": "={{ $json.type }}"
+            },
+            {
+              "name": "date",
+              "value": "={{ $today.format('yyyy-MM-dd') }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3552,
+        768
+      ],
+      "id": "6d67bc20-6edf-4a37-ad82-a4886fea6266",
+      "name": "Criar Budget"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "914691621734879",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').first().json.contacts[0].wa_id }}",
+        "textBody": "={{ $('Edit Fields2').first().json.message }}\nValor: {{ $json.limit_amount }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        3776,
+        768
+      ],
+      "id": "cb0adc92-d7e0-4f6b-ac31-ca1ceda0340c",
+      "name": "Send message4",
+      "webhookId": "59093ce4-bf5c-438f-a5b8-a92231a64be9",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Jl5aH7LJ3O7m8M3p",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://finanzas.ktuche.com/transactions/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "1"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3552,
+        1344
+      ],
+      "id": "b5459964-5a8e-49f6-95e3-967670e202a4",
+      "name": "buscar último1",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "914691621734879",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').first().json.contacts[0].wa_id }}",
+        "textBody": "= {{ $('Edit Fields2').first().json.message }}\n\n📂 Descrición: {{ $json.description }}\n🎯 Valor: ${{ $json.amount }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        4224,
+        1440
+      ],
+      "id": "4818d82d-2ffb-4ba3-ba41-a1ed7e07cb19",
+      "name": "Send message5",
+      "webhookId": "59093ce4-bf5c-438f-a5b8-a92231a64be9",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Jl5aH7LJ3O7m8M3p",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://finanzas.ktuche.com/transactions/{{ $json.id }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "amount",
+              "value": "={{ $json.amount }}\n"
+            },
+            {
+              "name": "category",
+              "value": "={{ $json.category }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        4000,
+        1440
+      ],
+      "id": "961508b7-8091-4faa-a4bc-66d62848070b",
+      "name": "Atualizar Transação"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Eres un Consultor Financiero Colombiano, amigo y directo.\n\nTU TAREA: Reportar los datos EXACTOS que recibes del sistema. NO inventes números.\n\nDATOS DEL SISTEMA (JSON):\n{{ JSON.stringify($json) }}\\n\\nINSTRUCCIONES:\n1. Di el 'balance' actual como Saldo Disponible.\n2. Di el total de 'income' e 'expenses' exactos como aparecen en los datos.\n3. Si el usuario pidió 'saldo', dalo directo.\n4. Revisa 'budgets': Si 'alert' es true, avisa con ⚠️.\n5. Sé breve.",
+        "text": "={{ $json.userPrompt }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [
+        2448,
+        1184
+      ],
+      "id": "ca8ce19e-d4cf-4652-b67e-d8d6ea621312",
+      "name": "AI Agent Tool"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "914691621734879",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+        "textBody": "=✅ *{{ $('Code in JavaScript').item.json.type == 'income' ? 'Ingreso' : 'Gasto' }} Registrado!*\n\n📝 {{ $('Code in JavaScript').item.json.description }}\n💰 ${{ $('Code in JavaScript').item.json.amount }}\n📂 {{ $('Code in JavaScript').item.json.category }}\n\n",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        3776,
+        384
+      ],
+      "id": "5d865bd3-baad-4e7d-8f48-d9bbbae812fe",
+      "name": "Mensagem de confirmação do cadastro1",
+      "webhookId": "e461be41-37b4-41f7-a7e4-78d895161a34",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Jl5aH7LJ3O7m8M3p",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "914691621734879",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').first().json.contacts[0].wa_id }}",
+        "textBody": "=📊 *RELATÓRIO FINANCEIRO*\n\n💰 *Total Entradas:* {{ $json.total_income }}\n💸 *Total Saídas:* {{ $json.total_expenses }}\n━━━━━━━━━━━━━━━━━━\n🏦 *SALDO ATUAL:* *{{ $json.balance }}*\n━━━━━━━━━━━━━━━━━━\n\n💡 *Dica:* {{ $json.ai_advice_message }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        4000,
+        1632
+      ],
+      "id": "725cb6e1-a1ac-41ad-8d31-f7b0dc95650f",
+      "name": "Send message6",
+      "webhookId": "59093ce4-bf5c-438f-a5b8-a92231a64be9",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Jl5aH7LJ3O7m8M3p",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Você é um analista financeiro.\nAbaixo estão as transações do usuário recuperadas do banco de dados:\n{{ JSON.stringify($json) }}\n\nResponda a pergunta do usuário de forma resumida.\nDiga o total gasto, total ganho e o saldo final (Receitas - Despesas).\nResponda em ESPANHOL.\n\nTU TAREA: Reportar los datos EXACTOS que recibes del sistema. NO inventes números.\n\nDATOS DEL SISTEMA (JSON):\n{{ JSON.stringify($json) }}\\n\\nINSTRUCCIONES:\n1. Di el 'balance' actual como Saldo Disponible.\n2. Di el total de 'income' e 'expenses' exactos como aparecen en los datos.\n3. Si el usuario pidió 'saldo', dalo directo.\n4. Revisa 'budgets': Si 'alert' es true, avisa con ⚠️.\n5. Sé breve.",
+        "text": "={{ $json.userPrompt }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [
+        2736,
+        1184
+      ],
+      "id": "6dad3dba-830a-400a-bc76-94d04056fe26",
+      "name": "AI Agent Tool1"
+    },
+    {
+      "parameters": {
+        "jsCode": "let totalIncome = 0;\nlet totalExpenses = 0;\n\n// Sumar valores\nfor (const item of items) {\n  const amount = parseFloat(item.json.amount) || 0;\n  const type = item.json.type;\n\n  if (type === 'income') {\n    totalIncome += amount;\n  } else if (type === 'expense') {\n    totalExpenses += amount;\n  }\n}\n\nconst balance = totalIncome - totalExpenses;\n\n// Función para formatear en Pesos Colombianos (COP)\n// Usa 'es-CO' para asegurar el formato correcto ($ 1.200.500)\nfunction formatMoney(value) {\n  return value.toLocaleString('es-CO', {\n    style: 'currency',\n    currency: 'COP',\n    minimumFractionDigits: 0, // En Colombia no se usan céntimos usualmente\n    maximumFractionDigits: 0\n  });\n}\n\n// Lógica simple para el Consejo (en Español)\nlet advice = \"\";\nif (balance < 0) {\n  advice = \"⚠️ ¡Alerta Roja! Estás gastando más de lo que ganas. Revisa tus gastos superfluos.\";\n} else if (totalExpenses > totalIncome * 0.8) {\n  advice = \"⚠️ ¡Cuidado! Ya has comprometido más del 80% de tus ingresos.\";\n} else {\n  advice = \"🏆 ¡Felicitaciones! Tus finanzas están saludables y bajo control.\";\n}\n\n// Retorna los valores formateados\nreturn [{\n  json: {\n    total_income: formatMoney(totalIncome),\n    total_expenses: formatMoney(totalExpenses),\n    balance: formatMoney(balance),\n    ai_advice_message: advice\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3776,
+        1632
+      ],
+      "id": "7f4e947f-daa4-4685-9a40-7ec9796eb37c",
+      "name": "Faz a Soma"
+    },
+    {
+      "parameters": {
+        "url": "=https://finanzas.ktuche.com/transactions/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "50"
+            },
+            {
+              "name": "month",
+              "value": "={{ $today.format('MM') }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        3552,
+        1632
+      ],
+      "id": "a040705e-b177-4d59-936f-f77dcbe9fbb8",
+      "name": "Lista de Transações"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega o texto que a IA mandou\nconst aiOutput = items[0].json.output || \"\";\n\n// Procura pelo primeiro bloco que parece um JSON: { ... }\nconst jsonMatch = aiOutput.match(/\\{[\\s\\S]*?\\}/);\n\nif (jsonMatch) {\n  try {\n    // Tenta converter o texto encontrado em objeto real\n    const cleanData = JSON.parse(jsonMatch[0]);\n\n    // Retorna os dados limpos para os próximos nodes\n    return [{\n      json: {\n        type: cleanData.type || \"chat\", // Se não achar tipo, vira chat\n        amount: cleanData.amount || 0,\n        category: cleanData.category || \"Geral\",\n        description: cleanData.description || \"\",\n        message: cleanData.message || \"\"\n      }\n    }];\n  } catch (error) {\n    // Se der erro no JSON, assume que é só conversa\n    return [{ json: { type: \"chat\", message: aiOutput } }];\n  }\n} else {\n  // Se não achar JSON nenhum, é conversa normal\n  return [{ json: { type: \"chat\", message: aiOutput } }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3104,
+        960
+      ],
+      "id": "61a9f945-919d-40d3-bed4-c5a02838f835",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1cc3d597-9317-4518-9a3b-c0045da1e167",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3776,
+        1344
+      ],
+      "id": "e219e9f5-e86a-48ad-9ffe-3948eff38ea6",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "914691621734879",
+        "recipientPhoneNumber": "={{ $('WhatsApp Trigger').first().json.contacts[0].wa_id }}",
+        "textBody": "=🚫 Ops! Não encontrei nenhuma transação anterior para editar/apagar.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        4000,
+        1248
+      ],
+      "id": "541436fc-0b89-466c-92ca-56f3d057a4f9",
+      "name": "Send message7",
+      "webhookId": "59093ce4-bf5c-438f-a5b8-a92231a64be9",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "Jl5aH7LJ3O7m8M3p",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "clientes",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "nome",
+              "fieldValue": "={{ $('WhatsApp Trigger').item.json.contacts[0].profile.name }}"
+            },
+            {
+              "fieldId": "telefone",
+              "fieldValue": "={{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        576,
+        1328
+      ],
+      "id": "02ca9560-2c4b-4ed4-aaf5-440c115244bf",
+      "name": "Criar Cliente",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "ckTZnsvDuhQVoRFR",
+          "name": "Supabase Nano's Burgues"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Consulta el historial de transacciones financieras (ingresos y gastos) del mes actual.",
+        "url": "https://finanzas.ktuche.com/transactions/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "50"
+            },
+            {
+              "name": "month",
+              "value": "={{ $today.format('MM') }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        2896,
+        1408
+      ],
+      "id": "cd71b8cb-04ff-47c7-9c96-8960c0d0ed53",
+      "name": "Consulta de Gastos"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent Tool",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "AI Agent Tool1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cadastrar": {
+      "main": [
+        [
+          {
+            "node": "Mensagem de confirmação do cadastro1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Qué tipo de mensaje es?": {
+      "main": [
+        [
+          {
+            "node": "Extraer información de persona4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Descargar media",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Descargar media1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Descargar media2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar media": {
+      "main": [
+        [
+          {
+            "node": "Obtener archivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener archivo": {
+      "main": [
+        [
+          {
+            "node": "Analizar imagen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analizar imagen": {
+      "main": [
+        [
+          {
+            "node": "Extraer información de persona1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer información de persona1": {
+      "main": [
+        [
+          {
+            "node": "Extraer y unir datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar media1": {
+      "main": [
+        [
+          {
+            "node": "Obtener archivo1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener archivo1": {
+      "main": [
+        [
+          {
+            "node": "Analizar imagen1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analizar imagen1": {
+      "main": [
+        [
+          {
+            "node": "Extraer información de persona2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer información de persona2": {
+      "main": [
+        [
+          {
+            "node": "Extraer y unir datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar media2": {
+      "main": [
+        [
+          {
+            "node": "Obtener archivo2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener archivo2": {
+      "main": [
+        [
+          {
+            "node": "Transcribir audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer información de persona3": {
+      "main": [
+        [
+          {
+            "node": "Extraer y unir datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribir audio": {
+      "main": [
+        [
+          {
+            "node": "Extraer información de persona3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "¿Qué tipo de mensaje es?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Criar Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "¿Qué tipo de mensaje es?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a row": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Get a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer información de persona4": {
+      "main": [
+        [
+          {
+            "node": "Extraer y unir datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer y unir datos": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Cadastrar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "buscar último",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Criar Budget",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Listar Budgets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "buscar último1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Lista de Transações",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "buscar último": {
+      "main": [
+        [
+          {
+            "node": "Deletar Transação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "apagar": {
+      "main": [
+        [
+          {
+            "node": "Send message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "criar/editar orçamento": {
+      "main": [
+        [
+          {
+            "node": "Send message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listar Budgets": {
+      "main": [
+        [
+          {
+            "node": "Achar ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Achar ID": {
+      "main": [
+        [
+          {
+            "node": "Editar ou Apagar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Editar ou Apagar?": {
+      "main": [
+        [
+          {
+            "node": "criar/editar orçamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "apagar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deletar Transação": {
+      "main": [
+        [
+          {
+            "node": "Send message3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Budget": {
+      "main": [
+        [
+          {
+            "node": "Send message4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "buscar último1": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atualizar Transação": {
+      "main": [
+        [
+          {
+            "node": "Send message5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent Tool1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Faz a Soma": {
+      "main": [
+        [
+          {
+            "node": "Send message6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lista de Transações": {
+      "main": [
+        [
+          {
+            "node": "Faz a Soma",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Send message7",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Atualizar Transação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Criar Cliente": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consulta de Gastos": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent Tool1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "9ef05b03-5ad9-4466-9e8a-7859f7072293",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2d95b1aca089927f59c112cbbdc75fb2a50ddc6e274de720078481e17950344f"
+  },
+  "id": "nVOImRAQh2eI0UFD9Tq-4",
+  "tags": []
+}
