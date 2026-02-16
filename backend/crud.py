@@ -2,18 +2,18 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 
 # Transactions
-def get_transactions(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Transaction).offset(skip).limit(limit).all()
+def get_transactions(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+    return db.query(models.Transaction).filter(models.Transaction.user_id == user_id).offset(skip).limit(limit).all()
 
-def create_transaction(db: Session, transaction: schemas.TransactionCreate):
-    db_transaction = models.Transaction(**transaction.dict())
+def create_transaction(db: Session, transaction: schemas.TransactionCreate, user_id: int):
+    db_transaction = models.Transaction(**transaction.dict(), user_id=user_id)
     db.add(db_transaction)
     db.commit()
     db.refresh(db_transaction)
     return db_transaction
 
-def update_transaction(db: Session, transaction_id: int, transaction: schemas.TransactionUpdate):
-    db_trans = db.query(models.Transaction).filter(models.Transaction.id == transaction_id).first()
+def update_transaction(db: Session, transaction_id: int, transaction: schemas.TransactionUpdate, user_id: int):
+    db_trans = db.query(models.Transaction).filter(models.Transaction.id == transaction_id, models.Transaction.user_id == user_id).first()
     if db_trans:
         update_data = transaction.dict(exclude_unset=True)
         # Convert date string to date object if present
@@ -31,35 +31,35 @@ def update_transaction(db: Session, transaction_id: int, transaction: schemas.Tr
         db.refresh(db_trans)
     return db_trans
 
-def delete_transaction(db: Session, transaction_id: int):
-    val = db.query(models.Transaction).filter(models.Transaction.id == transaction_id).first()
+def delete_transaction(db: Session, transaction_id: int, user_id: int):
+    val = db.query(models.Transaction).filter(models.Transaction.id == transaction_id, models.Transaction.user_id == user_id).first()
     if val:
         db.delete(val)
         db.commit()
     return val
 
 # Budgets
-def get_budgets(db: Session):
-    return db.query(models.Budget).all()
+def get_budgets(db: Session, user_id: int):
+    return db.query(models.Budget).filter(models.Budget.user_id == user_id).all()
 
-def create_budget(db: Session, budget: schemas.BudgetCreate):
-    db_budget = db.query(models.Budget).filter(models.Budget.category == budget.category).first()
+def create_budget(db: Session, budget: schemas.BudgetCreate, user_id: int):
+    # Verificar se já existe budget para esta categoria e usuário
+    db_budget = db.query(models.Budget).filter(
+        models.Budget.category == budget.category,
+        models.Budget.user_id == user_id
+    ).first()
     if db_budget:
-        # Update existing if category matches, or handle as error? 
-        # Requirement says "Include, Alter, Delete". Let's assume Create is unique, Update is separate.
-        # For simplicity, if exists, we return it or update limit? Let's just create.
-        # Actually logic for create should probably fail if exists or just update. 
-        # Let's keep separate update method.
+        # Já existe, não criar duplicado
         pass
     
-    db_budget = models.Budget(**budget.dict())
+    db_budget = models.Budget(**budget.dict(), user_id=user_id)
     db.add(db_budget)
     db.commit()
     db.refresh(db_budget)
     return db_budget
 
-def update_budget(db: Session, budget_id: int, budget: schemas.BudgetBase):
-    db_budget = db.query(models.Budget).filter(models.Budget.id == budget_id).first()
+def update_budget(db: Session, budget_id: int, budget: schemas.BudgetBase, user_id: int):
+    db_budget = db.query(models.Budget).filter(models.Budget.id == budget_id, models.Budget.user_id == user_id).first()
     if db_budget:
         db_budget.category = budget.category
         db_budget.limit_amount = budget.limit_amount
@@ -67,8 +67,8 @@ def update_budget(db: Session, budget_id: int, budget: schemas.BudgetBase):
         db.refresh(db_budget)
     return db_budget
 
-def delete_budget(db: Session, budget_id: int):
-    val = db.query(models.Budget).filter(models.Budget.id == budget_id).first()
+def delete_budget(db: Session, budget_id: int, user_id: int):
+    val = db.query(models.Budget).filter(models.Budget.id == budget_id, models.Budget.user_id == user_id).first()
     if val:
         db.delete(val)
         db.commit()
@@ -110,18 +110,18 @@ def verify_login(db: Session, login_data: schemas.LoginSchema):
 
 # ============ CATEGORIES ============
 
-def get_categories(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Category).offset(skip).limit(limit).all()
+def get_categories(db: Session, user_id: int, skip: int = 0, limit: int = 100):
+    return db.query(models.Category).filter(models.Category.user_id == user_id).offset(skip).limit(limit).all()
 
-def create_category(db: Session, category: schemas.CategoryCreate):
-    db_category = models.Category(name=category.name)
+def create_category(db: Session, category: schemas.CategoryCreate, user_id: int):
+    db_category = models.Category(name=category.name, user_id=user_id)
     db.add(db_category)
     db.commit()
     db.refresh(db_category)
     return db_category
 
-def delete_category(db: Session, category_id: int):
-    db.query(models.Category).filter(models.Category.id == category_id).delete()
+def delete_category(db: Session, category_id: int, user_id: int):
+    db.query(models.Category).filter(models.Category.id == category_id, models.Category.user_id == user_id).delete()
     db.commit()
 
 
@@ -195,11 +195,11 @@ def toggle_user_active(db: Session, user_id: int):
 
 # ============ TRANSACTION SEARCH & FILTERS ============
 
-def get_transactions_filtered(db: Session, filtros: schemas.TransactionFilter):
+def get_transactions_filtered(db: Session, filtros: schemas.TransactionFilter, user_id: int):
     """Buscar transações com filtros avançados"""
     from sqlalchemy import or_, and_, desc, asc
     
-    query = db.query(models.Transaction)
+    query = db.query(models.Transaction).filter(models.Transaction.user_id == user_id)
     
     # Aplicar filtros
     if filtros.data_inicio:
@@ -245,10 +245,13 @@ def get_transactions_filtered(db: Session, filtros: schemas.TransactionFilter):
     return transacoes, total
 
 
-def get_transactions_stats(db: Session, transacoes: list = None):
+def get_transactions_stats(db: Session, transacoes: list = None, user_id: int = None):
     """Calcular estatísticas agregadas de transações"""
     if transacoes is None:
-        transacoes = db.query(models.Transaction).all()
+        if user_id:
+            transacoes = db.query(models.Transaction).filter(models.Transaction.user_id == user_id).all()
+        else:
+            transacoes = db.query(models.Transaction).all()
     
     if not transacoes:
         return schemas.TransactionStats(
@@ -290,12 +293,13 @@ def get_transactions_stats(db: Session, transacoes: list = None):
     )
 
 
-def get_transactions_by_period(db: Session, data_inicio, data_fim, agrupar_por: str = "month"):
+def get_transactions_by_period(db: Session, data_inicio, data_fim, user_id: int, agrupar_por: str = "month"):
     """Obter transações agrupadas por período"""
     from datetime import datetime
     from collections import defaultdict
     
     transacoes = db.query(models.Transaction).filter(
+        models.Transaction.user_id == user_id,
         models.Transaction.date >= data_inicio,
         models.Transaction.date <= data_fim
     ).all()

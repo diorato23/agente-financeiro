@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, Date, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Float, Date, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
 
@@ -13,6 +14,11 @@ class User(Base):
     role = Column(String, default="user")  # "admin" o "user"
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
+    budgets = relationship("Budget", back_populates="user", cascade="all, delete-orphan")
+    categories = relationship("Category", back_populates="user", cascade="all, delete-orphan")
 
 
 class Transaction(Base):
@@ -24,13 +30,21 @@ class Transaction(Base):
     type = Column(String)  # 'income' or 'expense'
     category = Column(String, index=True)
     date = Column(Date)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    
+    # Relationship
+    user = relationship("User", back_populates="transactions")
 
 class Budget(Base):
     __tablename__ = "budgets"
 
     id = Column(Integer, primary_key=True, index=True)
-    category = Column(String, unique=True, index=True)
+    category = Column(String, index=True)  # Removido unique=True para permitir mesma categoria por usuário
     limit_amount = Column(Float)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    
+    # Relationship
+    user = relationship("User", back_populates="budgets")
 
 class Profile(Base):
     __tablename__ = "profile"
@@ -44,4 +58,8 @@ class Category(Base):
     __tablename__ = "categories"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True, nullable=False)
+    name = Column(String, index=True, nullable=False)  # Removido unique=True para permitir mesma categoria por usuário
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    
+    # Relationship
+    user = relationship("User", back_populates="categories")

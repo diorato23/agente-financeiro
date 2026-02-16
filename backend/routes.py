@@ -156,8 +156,12 @@ def toggle_user(
 # ============ TRANSACTIONS ============
 
 @router.post("/transactions/", response_model=schemas.Transaction)
-def create_transaction(transaction: schemas.TransactionCreate, db: Session = Depends(get_db)):
-    return crud.create_transaction(db=db, transaction=transaction)
+def create_transaction(
+    transaction: schemas.TransactionCreate, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    return crud.create_transaction(db=db, transaction=transaction, user_id=current_user.id)
 
 @router.get("/transactions/", response_model=List[schemas.Transaction])
 def read_transactions(
@@ -173,7 +177,8 @@ def read_transactions(
     busca: Optional[str] = None,
     ordenar_por: str = "date",
     ordem: str = "desc",
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
 ):
     """Listar transações com filtros opcionais"""
     # Se houver filtros, usar busca avançada
@@ -192,34 +197,47 @@ def read_transactions(
             skip=skip,
             limit=limit
         )
-        transacoes, _ = crud.get_transactions_filtered(db, filtros)
+        transacoes, _ = crud.get_transactions_filtered(db, filtros, user_id=current_user.id)
         return transacoes
     else:
         # Busca simples original
-        return crud.get_transactions(db, skip=skip, limit=limit)
+        return crud.get_transactions(db, user_id=current_user.id, skip=skip, limit=limit)
 
 @router.put("/transactions/{transaction_id}", response_model=schemas.Transaction)
-def update_transaction(transaction_id: int, transaction: schemas.TransactionUpdate, db: Session = Depends(get_db)):
-    db_transaction = crud.update_transaction(db, transaction_id, transaction)
+def update_transaction(
+    transaction_id: int, 
+    transaction: schemas.TransactionUpdate, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    db_transaction = crud.update_transaction(db, transaction_id, transaction, user_id=current_user.id)
     if db_transaction is None:
         raise HTTPException(status_code=404, detail="Transaction not found")
     return db_transaction
 
 @router.delete("/transactions/{transaction_id}")
-def delete_transaction(transaction_id: int, db: Session = Depends(get_db)):
-    crud.delete_transaction(db, transaction_id)
+def delete_transaction(
+    transaction_id: int, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    crud.delete_transaction(db, transaction_id, user_id=current_user.id)
     return {"ok": True}
 
 
 # ============ TRANSACTION SEARCH & REPORTS ============
 
 @router.post("/transactions/search", response_model=schemas.TransactionSearchResponse)
-def search_transactions(filtros: schemas.TransactionFilter, db: Session = Depends(get_db)):
+def search_transactions(
+    filtros: schemas.TransactionFilter, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
     """Busca avançada de transações com estatísticas"""
     import math
     
     # Buscar transações filtradas
-    transacoes, total = crud.get_transactions_filtered(db, filtros)
+    transacoes, total = crud.get_transactions_filtered(db, filtros, user_id=current_user.id)
     
     # Calcular estatísticas
     estatisticas = crud.get_transactions_stats(db, transacoes)
@@ -242,12 +260,13 @@ def get_transactions_report(
     data_inicio: date,
     data_fim: date,
     agrupar_por: str = "month",
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
 ):
     """Gerar relatório de transações com análise temporal"""
     # Obter transações e evolução temporal
     transacoes, evolucao_temporal = crud.get_transactions_by_period(
-        db, data_inicio, data_fim, agrupar_por
+        db, data_inicio, data_fim, user_id=current_user.id, agrupar_por=agrupar_por
     )
     
     # Calcular estatísticas gerais
@@ -297,36 +316,55 @@ def get_transactions_report(
 # ============ BUDGETS ============
 
 @router.post("/budgets/", response_model=schemas.Budget)
-def create_budget(budget: schemas.BudgetCreate, db: Session = Depends(get_db)):
-    current_budgets = crud.get_budgets(db)
+def create_budget(
+    budget: schemas.BudgetCreate, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    current_budgets = crud.get_budgets(db, user_id=current_user.id)
     for b in current_budgets:
         if b.category.lower() == budget.category.lower():
             raise HTTPException(status_code=400, detail="Category already has a budget. Use Update.")
-    return crud.create_budget(db=db, budget=budget)
+    return crud.create_budget(db=db, budget=budget, user_id=current_user.id)
 
 @router.get("/budgets/", response_model=List[schemas.Budget])
-def read_budgets(db: Session = Depends(get_db)):
-    return crud.get_budgets(db)
+def read_budgets(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    return crud.get_budgets(db, user_id=current_user.id)
 
 @router.put("/budgets/{budget_id}", response_model=schemas.Budget)
-def update_budget(budget_id: int, budget: schemas.BudgetBase, db: Session = Depends(get_db)):
-    db_budget = crud.update_budget(db, budget_id, budget)
+def update_budget(
+    budget_id: int, 
+    budget: schemas.BudgetBase, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    db_budget = crud.update_budget(db, budget_id, budget, user_id=current_user.id)
     if db_budget is None:
         raise HTTPException(status_code=404, detail="Budget not found")
     return db_budget
 
 @router.delete("/budgets/{budget_id}")
-def delete_budget(budget_id: int, db: Session = Depends(get_db)):
-    crud.delete_budget(db, budget_id)
+def delete_budget(
+    budget_id: int, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    crud.delete_budget(db, budget_id, user_id=current_user.id)
     return {"ok": True}
 
 
 # ============ SUMMARY ============
 
 @router.get("/summary")
-def get_summary(db: Session = Depends(get_db)):
-    transactions = crud.get_transactions(db, limit=1000)
-    budgets = crud.get_budgets(db)
+def get_summary(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    transactions = crud.get_transactions(db, user_id=current_user.id, limit=1000)
+    budgets = crud.get_budgets(db, user_id=current_user.id)
     
     total_income = sum(t.amount for t in transactions if t.type == 'income')
     total_expenses = sum(t.amount for t in transactions if t.type == 'expense')
@@ -369,26 +407,33 @@ def get_summary(db: Session = Depends(get_db)):
 # ============ CATEGORIES ============
 
 @router.get("/categories/", response_model=List[schemas.Category])
-def read_categories(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return crud.get_categories(db, skip=skip, limit=limit)
+def read_categories(
+    skip: int = 0, 
+    limit: int = 100, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    return crud.get_categories(db, user_id=current_user.id, skip=skip, limit=limit)
 
 @router.post("/categories/", response_model=schemas.Category)
-def create_category(category: schemas.CategoryCreate, db: Session = Depends(get_db)):
-    # Check if category already exists
-    # Although database has unique constraint, cleaner to check here or handle exception
-    # For now, let's rely on frontend or DB error, or add a quick check?
-    # Let's add a quick check if simple
-    # But crud.create_category doesn't check.
-    # Let's just call it.
+def create_category(
+    category: schemas.CategoryCreate, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
     try:
-        return crud.create_category(db=db, category=category)
+        return crud.create_category(db=db, category=category, user_id=current_user.id)
     except Exception as e:
          # In case of duplicate, likely IntegrityError
         raise HTTPException(status_code=400, detail="Category probably already exists")
 
 @router.delete("/categories/{category_id}")
-def delete_category(category_id: int, db: Session = Depends(get_db)):
-    crud.delete_category(db, category_id)
+def delete_category(
+    category_id: int, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    crud.delete_category(db, category_id, user_id=current_user.id)
     return {"ok": True}
 
 
