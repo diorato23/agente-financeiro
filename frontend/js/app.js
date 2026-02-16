@@ -1,5 +1,37 @@
 const API_URL = '';
 
+// Interceptor para adicionar token JWT em todas as requisições
+const originalFetch = window.fetch;
+window.fetch = async (url, options = {}) => {
+    const token = localStorage.getItem('access_token');
+
+    // Garantir que headers seja um objeto
+    if (!options.headers) {
+        options.headers = {};
+    }
+
+    // Adicionar token se existir
+    if (token) {
+        options.headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+        const response = await originalFetch(url, options);
+
+        // Se der erro de autenticação (401), fazer logout
+        if (response.status === 401 && !url.includes('/login')) {
+            console.warn("Sessão expirada ou inválida");
+            if (typeof window.logout === 'function') {
+                window.logout();
+            }
+        }
+
+        return response;
+    } catch (err) {
+        throw err;
+    }
+};
+
 // Format Currency for Display
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-CO', {
