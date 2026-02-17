@@ -309,7 +309,8 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                alert(isLoginMode ? 'Usuario o contraseña incorrectos.' : 'Error al guardar.');
+                // Show specific error message from backend
+                alert(error.message || (isLoginMode ? 'Usuario o contraseña incorrectos.' : 'Error al guardar.'));
                 btn.innerHTML = isLoginMode ? 'Ingresar' : 'Registrarse';
                 btn.style.opacity = '1';
             }
