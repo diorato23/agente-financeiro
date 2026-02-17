@@ -110,17 +110,18 @@ window.logout = () => {
 // Fetch Data
 async function fetchProfile() {
     try {
-        const res = await fetch(`${API_URL}/profile`);
+        // Use new endpoint for authenticated user
+        const res = await fetch(`${API_URL}/users/me`);
         if (!res.ok) throw new Error('Failed to fetch profile');
         const data = await res.json();
 
-        // If name exists, use it. If "Usuario" (default), try to redirect only if strictly needed (optional).
-        // For now just fix the "undefined" bug.
-        const name = data.name || "Usuario";
+        // Use 'username' from User schema
+        const name = data.username || "Usuario";
         document.getElementById('userNameDisplay').innerText = `Hola, ${name}`;
     } catch (err) {
         // Fallback
-        document.getElementById('userNameDisplay').innerText = `Hola, Usuario`;
+        const storedName = localStorage.getItem('user_name');
+        document.getElementById('userNameDisplay').innerText = `Hola, ${storedName || 'Usuario'}`;
         console.error(err);
     }
 }

@@ -191,6 +191,10 @@
             <p>Ingresa para administrar tus finanzas</p>
         </div>
 
+        <div id="error-message"
+            style="display: none; background-color: #fee2e2; color: #b91c1c; padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1rem; font-size: 0.9rem; text-align: center;">
+        </div>
+
         <form id="loginForm">
             <div class="input-group">
                 <label>Tu Nombre</label>
@@ -208,6 +212,7 @@
         <p class="toggle-text" id="toggleText">
             ¿No tienes cuenta? <span onclick="toggleMode()">Crear Cuenta</span>
         </p>
+        <p style="margin-top: 2rem; font-size: 0.7rem; color: #9ca3af; text-align: center;">v2.6 (Mobile Fix)</p>
     </div>
 
     <script>
@@ -220,6 +225,9 @@
             const headerP = document.querySelector('#headerText p');
             const btn = document.getElementById('submitBtn');
             const toggle = document.getElementById('toggleText');
+            const errorDiv = document.getElementById('error-message');
+
+            if (errorDiv) errorDiv.style.display = 'none';
 
             if (isLoginMode) {
                 headerH1.innerText = '¡Bienvenido!';
@@ -234,12 +242,24 @@
             }
         }
 
+        function showError(msg) {
+            const el = document.getElementById('error-message');
+            if (el) {
+                el.innerText = msg;
+                el.style.display = 'block';
+            } else {
+                alert(msg);
+            }
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('name').value;
             const password = document.getElementById('password').value;
             const btn = document.getElementById('submitBtn');
+            const errorDiv = document.getElementById('error-message');
 
+            if (errorDiv) errorDiv.style.display = 'none';
             btn.innerHTML = isLoginMode ? 'Ingresando...' : 'Creando...';
             btn.style.opacity = '0.8';
 
@@ -254,7 +274,11 @@
                         body: `username=${encodeURIComponent(name)}&password=${encodeURIComponent(password)}`
                     });
 
-                    if (!res.ok) throw new Error('Credenciales inválidas');
+                    if (!res.ok) {
+                        if (res.status === 401) throw new Error('Usuario o contraseña incorrectos');
+                        if (res.status === 500) throw new Error('Error 500: Falta dependencias o reset de admin');
+                        throw new Error('Credenciales inválidas o error de conexión');
+                    }
 
                     const data = await res.json();
 
@@ -310,7 +334,7 @@
             } catch (error) {
                 console.error('Error:', error);
                 // Show specific error message from backend
-                alert(error.message || (isLoginMode ? 'Usuario o contraseña incorrectos.' : 'Error al guardar.'));
+                showError(error.message || (isLoginMode ? 'Usuario o contraseña incorrectos.' : 'Error al guardar.'));
                 btn.innerHTML = isLoginMode ? 'Ingresar' : 'Registrarse';
                 btn.style.opacity = '1';
             }
