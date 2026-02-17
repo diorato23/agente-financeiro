@@ -248,10 +248,10 @@
             try {
                 if (isLoginMode) {
                     // LOGIN Logic - using new JWT system
-                    const res = await fetch(`${API_URL}/login`, {
+                    const res = await fetch(`${API_URL}/auth/login`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name: name, password: password })
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `username=${encodeURIComponent(name)}&password=${encodeURIComponent(password)}`
                     });
 
                     if (!res.ok) throw new Error('Credenciales inválidas');
@@ -269,17 +269,41 @@
                     window.location.href = 'index.html';
 
                 } else {
-                    // REGISTER Logic - only available for first user
-                    const res = await fetch(`${API_URL}/profile`, {
-                        method: 'PUT',
+                    // REGISTER Logic - new public endpoint
+                    const res = await fetch(`${API_URL}/auth/register`, {
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name: name, password: password })
+                        body: JSON.stringify({
+                            username: name,
+                            password: password,
+                            email: null // Optional
+                        })
                     });
 
-                    if (!res.ok) throw new Error('Error al crear perfil');
+                    if (!res.ok) {
+                        const errData = await res.json();
+                        throw new Error(errData.detail || 'Error al crear usuario');
+                    }
 
-                    // Auto-login after register
+                    // Auto-login after register logic
+                    // We need to call login endpoint to get token
+                    const loginRes = await fetch(`${API_URL}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `username=${encodeURIComponent(name)}&password=${encodeURIComponent(password)}`
+                    });
+
+                    if (!loginRes.ok) throw new Error('Error al iniciar sesión automática');
+
+                    const data = await loginRes.json();
+
                     localStorage.setItem('isLoggedIn', 'true');
+                    if (data.access_token) {
+                        localStorage.setItem('access_token', data.access_token);
+                        localStorage.setItem('user_role', data.user.role || 'user');
+                        localStorage.setItem('user_name', data.user.username);
+                    }
+
                     window.location.href = 'index.html';
                 }
 

@@ -37,6 +37,21 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     }
 
 
+@router.post("/auth/register", response_model=schemas.User)
+def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    """Registrar novo usuário"""
+    # Verificar se usuário já existe
+    if crud.get_user_by_username(db, user.username):
+        raise HTTPException(
+            status_code=400,
+            detail="Nome de usuário já existe"
+        )
+    
+    # Criar usuário
+    password_hash = auth.get_password_hash(user.password)
+    return crud.create_user(db=db, user=user, password_hash=password_hash)
+
+
 @router.get("/users/me", response_model=schemas.User)
 def read_users_me(current_user: models.User = Depends(auth.get_current_user_required)):
     """Obtener usuario actual"""

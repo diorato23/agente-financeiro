@@ -13,7 +13,9 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 horas
 
 # Contexto para hash de contraseñas
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Contexto para hash de contraseñas
+# Usando pbkdf2_sha256 por compatibilidad (Windows/Linux) y evitando errores de DLL de bcrypt
+pwd_context = CryptContext(schemes=["pbkdf2_sha256", "bcrypt"], deprecated="auto")
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
