@@ -225,6 +225,9 @@ def update_transaction(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
+    if current_user.parent_id:
+        raise HTTPException(status_code=403, detail="Dependentes não podem editar transações")
+        
     db_transaction = crud.update_transaction(db, transaction_id, transaction, user_id=current_user.id)
     if db_transaction is None:
         raise HTTPException(status_code=404, detail="Transaction not found")
@@ -236,6 +239,9 @@ def delete_transaction(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
+    if current_user.parent_id:
+        raise HTTPException(status_code=403, detail="Dependentes não podem excluir transações")
+        
     crud.delete_transaction(db, transaction_id, user_id=current_user.id)
     return {"ok": True}
 
@@ -336,6 +342,9 @@ def create_budget(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
+    if current_user.parent_id:
+        raise HTTPException(status_code=403, detail="Dependentes não podem criar orçamentos")
+
     current_budgets = crud.get_budgets(db, user_id=current_user.id)
     for b in current_budgets:
         if b.category.lower() == budget.category.lower():
@@ -347,6 +356,9 @@ def read_budgets(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
+    # Dependentes não gerenciam orçamentos, mas podem ser impedidos de ver ou não.
+    # Por enquanto, mantemos o acesso do CRUD (que retornará vazio se não tiver parent_id tratado, 
+    # mas o CRUD de budgets usa user_id direto. Dependentes não tem budgets próprios).
     return crud.get_budgets(db, user_id=current_user.id)
 
 @router.put("/budgets/{budget_id}", response_model=schemas.Budget)
@@ -356,6 +368,9 @@ def update_budget(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
+    if current_user.parent_id:
+        raise HTTPException(status_code=403, detail="Dependentes não podem editar orçamentos")
+
     db_budget = crud.update_budget(db, budget_id, budget, user_id=current_user.id)
     if db_budget is None:
         raise HTTPException(status_code=404, detail="Budget not found")
@@ -367,6 +382,9 @@ def delete_budget(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
+    if current_user.parent_id:
+        raise HTTPException(status_code=403, detail="Dependentes não podem excluir orçamentos")
+
     crud.delete_budget(db, budget_id, user_id=current_user.id)
     return {"ok": True}
 
@@ -436,6 +454,9 @@ def create_category(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
+    if current_user.parent_id:
+        raise HTTPException(status_code=403, detail="Dependentes não podem criar categorias")
+
     try:
         return crud.create_category(db=db, category=category, user_id=current_user.id)
     except Exception as e:
@@ -448,6 +469,9 @@ def delete_category(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
+    if current_user.parent_id:
+        raise HTTPException(status_code=403, detail="Dependentes não podem excluir categorias")
+
     crud.delete_category(db, category_id, user_id=current_user.id)
     return {"ok": True}
 

@@ -3,7 +3,19 @@ from . import models, schemas
 
 # Transactions
 def get_transactions(db: Session, user_id: int, skip: int = 0, limit: int = 100):
-    return db.query(models.Transaction).filter(models.Transaction.user_id == user_id).offset(skip).limit(limit).all()
+    # Verificar se usuario tem dependentes
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    
+    # Lista de IDs para buscar (o próprio usuario + dependentes)
+    user_ids = [user_id]
+    
+    if user and not user.parent_id:
+        # Se não é dependente (pode ser pai), buscar filhos
+        children = db.query(models.User).filter(models.User.parent_id == user_id).all()
+        for child in children:
+            user_ids.append(child.id)
+            
+    return db.query(models.Transaction).filter(models.Transaction.user_id.in_(user_ids)).offset(skip).limit(limit).all()
 
 def create_transaction(db: Session, transaction: schemas.TransactionCreate, user_id: int):
     db_transaction = models.Transaction(**transaction.dict(), user_id=user_id)
@@ -111,7 +123,15 @@ def verify_login(db: Session, login_data: schemas.LoginSchema):
 # ============ CATEGORIES ============
 
 def get_categories(db: Session, user_id: int, skip: int = 0, limit: int = 100):
-    return db.query(models.Category).filter(models.Category.user_id == user_id).offset(skip).limit(limit).all()
+    # Verificar se usuario é dependente
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    target_user_id = user_id
+    
+    if user and user.parent_id:
+        # Se for dependente, usar categorias do pai
+        target_user_id = user.parent_id
+        
+    return db.query(models.Category).filter(models.Category.user_id == target_user_id).offset(skip).limit(limit).all()
 
 def create_category(db: Session, category: schemas.CategoryCreate, user_id: int):
     db_category = models.Category(name=category.name, user_id=user_id)
@@ -145,12 +165,24 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
 
 def create_user(db: Session, user: schemas.UserCreate, password_hash: str):
     """Crear usuario"""
+    # Se for dependente, verificar limite
+    if user.parent_id:
+        parent = db.query(models.User).filter(models.User.id == user.parent_id).first()
+        if not parent:
+            raise ValueError("Usuário pai não encontrado")
+        
+        # Verificar quantos dependentes o pai já tem
+        count = db.query(models.User).filter(models.User.parent_id == user.parent_id).count()
+        if count >= 4:
+            raise ValueError("Limite de 4 dependentes atingido")
+
     db_user = models.User(
         username=user.username,
         email=user.email,
         password_hash=password_hash,
         role=user.role,
-        is_active=user.is_active
+        is_active=user.is_active,
+        parent_id=user.parent_id
     )
     db.add(db_user)
     db.commit()
@@ -199,7 +231,19 @@ def get_transactions_filtered(db: Session, filtros: schemas.TransactionFilter, u
     """Buscar transações com filtros avançados"""
     from sqlalchemy import or_, and_, desc, asc
     
-    query = db.query(models.Transaction).filter(models.Transaction.user_id == user_id)
+    # Verificar se usuário tem dependentes
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    
+    # Lista de IDs para buscar (o próprio usuario + dependentes)
+    user_ids = [user_id]
+    
+    if user and not user.parent_id:
+        # Se não é dependente (pode ser pai), buscar filhos
+        children = db.query(models.User).filter(models.User.parent_id == user_id).all()
+        for child in children:
+            user_ids.append(child.id)
+    
+    query = db.query(models.Transaction).filter(models.Transaction.user_id.in_(user_ids))
     
     # Aplicar filtros
     if filtros.data_inicio:
@@ -249,7 +293,15 @@ def get_transactions_stats(db: Session, transacoes: list = None, user_id: int = 
     """Calcular estatísticas agregadas de transações"""
     if transacoes is None:
         if user_id:
-            transacoes = db.query(models.Transaction).filter(models.Transaction.user_id == user_id).all()
+            # Reutilizar lógica de IDs do get_transactions
+            user = db.query(models.User).filter(models.User.id == user_id).first()
+            user_ids = [user_id]
+            if user and not user.parent_id:
+                children = db.query(models.User).filter(models.User.parent_id == user_id).all()
+                for child in children:
+                    user_ids.append(child.id)
+            
+            transacoes = db.query(models.Transaction).filter(models.Transaction.user_id.in_(user_ids)).all()
         else:
             transacoes = db.query(models.Transaction).all()
     
@@ -298,8 +350,16 @@ def get_transactions_by_period(db: Session, data_inicio, data_fim, user_id: int,
     from datetime import datetime
     from collections import defaultdict
     
+    # Verificar pai/filhos
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    user_ids = [user_id]
+    if user and not user.parent_id:
+        children = db.query(models.User).filter(models.User.parent_id == user_id).all()
+        for child in children:
+            user_ids.append(child.id)
+    
     transacoes = db.query(models.Transaction).filter(
-        models.Transaction.user_id == user_id,
+        models.Transaction.user_id.in_(user_ids),
         models.Transaction.date >= data_inicio,
         models.Transaction.date <= data_fim
     ).all()

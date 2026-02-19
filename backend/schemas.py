@@ -59,6 +59,7 @@ class UserBase(BaseModel):
     email: Optional[str] = None
     role: str = "user"
     is_active: bool = True
+    parent_id: Optional[int] = None
 
 class UserCreate(UserBase):
     password: str
@@ -69,10 +70,12 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
     is_active: Optional[bool] = None
     password: Optional[str] = None
+    parent_id: Optional[int] = None
 
 class User(UserBase):
     id: int
     created_at: datetime
+    # parent_id já herdado de UserBase
     class Config:
         from_attributes = True
 

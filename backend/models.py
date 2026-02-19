@@ -19,6 +19,10 @@ class User(Base):
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
     budgets = relationship("Budget", back_populates="user", cascade="all, delete-orphan")
     categories = relationship("Category", back_populates="user", cascade="all, delete-orphan")
+    
+    # Self-referential relationship for dependents
+    parent_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    children = relationship("User", backref=relationship("User", remote_side=[id]), cascade="all, delete-orphan")
 
 
 class Transaction(Base):
