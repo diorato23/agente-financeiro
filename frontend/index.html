@@ -29,6 +29,8 @@
                 <a href="#" onclick="switchTab('transactions')"><i data-lucide="list"></i> Transacciones</a>
                 <a href="#" onclick="switchTab('reports')"><i data-lucide="bar-chart-2"></i> Informes</a>
                 <a href="#" onclick="switchTab('budgets')"><i data-lucide="pie-chart"></i> Presupuestos</a>
+                <a href="#" onclick="switchTab('dependents')" id="navDependents" style="display: none;"><i
+                        data-lucide="users"></i> Dependentes</a>
                 <a href="#" onclick="openCategoryModal()"><i data-lucide="tag"></i> Categorías</a>
                 <a href="admin.html" id="adminLink" style="display: none;"><i data-lucide="users"></i> Usuarios</a>
             </nav>
@@ -271,6 +273,34 @@
                     <!-- Management Cards injected here -->
                 </div>
             </div>
+
+            <!-- Dependents View -->
+            <div id="dependents" class="view" style="display: none;">
+                <div class="mobile-header-nav">
+                    <button class="btn-back" onclick="switchTab('dashboard')">
+                        <i data-lucide="arrow-left"></i> Volver al Inicio
+                    </button>
+                </div>
+                <header style="margin-bottom: 20px; justify-content: space-between; display: flex;">
+                    <h3>Gestión de Dependentes</h3>
+                    <button class="btn-primary" onclick="openDependentModal()">
+                        <i data-lucide="user-plus" style="width:18px; margin-right:5px;"></i> <span
+                            class="btn-text">Nuevo Dependente</span>
+                    </button>
+                </header>
+
+                <div class="card">
+                    <p style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem;">
+                        Você pode adicionar até 4 dependentes. Eles terão acesso apenas para criar transações.
+                    </p>
+                    <div id="dependentsList" class="budget-list">
+                        <!-- Dependents injected here -->
+                        <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                            Carregando...
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -398,6 +428,33 @@
                     <button type="submit" class="btn-primary" style="width: auto; padding: 0 1rem;">
                         <i data-lucide="plus"></i>
                     </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dependent Modal -->
+    <div id="dependentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('dependentModal')"
+                style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
+            <h2 style="margin-bottom: 1.5rem;">Novo Dependente</h2>
+            <form id="dependentForm">
+                <div class="form-group">
+                    <label>Nome de Usuário</label>
+                    <input type="text" id="depUsername" required placeholder="Ex: filho1">
+                </div>
+                <div class="form-group">
+                    <label>Email (Opcional)</label>
+                    <input type="email" id="depEmail" placeholder="email@exemplo.com">
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="depPassword" required placeholder="********">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('dependentModal')">Cancelar</button>
+                    <button type="submit" class="btn-primary">Criar Dependente</button>
                 </div>
             </form>
         </div>
