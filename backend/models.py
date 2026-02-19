@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, Date, Boolean, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from datetime import datetime
 from .database import Base
 
@@ -22,7 +22,7 @@ class User(Base):
     
     # Self-referential relationship for dependents
     parent_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    children = relationship("User", backref=relationship("User", remote_side=[id]), cascade="all, delete-orphan")
+    children = relationship("User", backref=backref("parent", remote_side=[id]), cascade="all, delete-orphan")
 
 
 class Transaction(Base):
