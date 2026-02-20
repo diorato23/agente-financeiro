@@ -128,6 +128,15 @@ def read_users_me(current_user: models.User = Depends(auth.get_current_user_requ
     return current_user
 
 
+@router.get("/users/dependents", response_model=List[schemas.UserSimple])
+def read_dependents(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    """Listar dependentes do usuário logado"""
+    return crud.get_dependents(db, current_user.id)
+
+
 # ============ USERS (Admin Only) ============
 
 @router.get("/users/", response_model=List[schemas.User])
@@ -236,14 +245,6 @@ def toggle_user(
     if db_user is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     return db_user
-
-@router.get("/users/dependents", response_model=List[schemas.UserSimple])
-def read_dependents(
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.get_current_user_required)
-):
-    """Listar dependentes do usuário logado"""
-    return crud.get_dependents(db, current_user.id)
 
 
 # ============ TRANSACTIONS ============
