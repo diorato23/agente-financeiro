@@ -5,6 +5,14 @@ from typing import List, Optional
 from datetime import timedelta, date
 from . import crud, models, schemas, database, auth
 
+
+def get_db():
+    db = database.SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 router = APIRouter()
 
 # --- Rotas de Convite (Dependentes) ---
@@ -54,12 +62,7 @@ def register_dependent(data: schemas.DependentRegister, db: Session = Depends(ge
 
 # --- Fim Rotas Convite ---
 
-def get_db():
-    db = database.SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+
 
 
 # ============ AUTH ============
