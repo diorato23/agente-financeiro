@@ -359,11 +359,8 @@
             btn.innerHTML = isLoginMode ? 'Ingresando...' : 'Creando...';
             btn.style.opacity = '0.8';
 
-            await new Promise(r => setTimeout(r, 500));
-
             try {
                 if (isLoginMode) {
-                    // LOGIN Logic - using new JWT system
                     const res = await fetch(`${API_URL}/auth/login`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -372,37 +369,23 @@
 
                     if (!res.ok) {
                         if (res.status === 401) throw new Error('Usuario o contraseña incorrectos');
-                        if (res.status === 500) throw new Error('Error 500: Falta dependencias o reset de admin');
-                        throw new Error('Credenciales inválidas o error de conexión');
+                        throw new Error('Error en el inicio de sesión');
                     }
 
-                    let data;
-                    try {
-                        data = await res.json();
-                    } catch (e) {
-                        console.error('Non-JSON response:', e);
-                        if (res.status === 500) throw new Error('Error interno del servidor. Contacte soporte.');
-                        throw new Error('Error inesperado en el servidor.');
-                    }
-
-                    // Store JWT token and user info
+                    const data = await res.json();
                     localStorage.setItem('isLoggedIn', 'true');
-                    if (data.access_token) {
-                        localStorage.setItem('access_token', data.access_token);
-                        localStorage.setItem('user_role', data.user.role || 'user');
-                        localStorage.setItem('user_name', data.user.username);
-                    }
-
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('user_role', data.user.role || 'user');
+                    localStorage.setItem('user_name', data.user.username);
                     window.location.href = 'index.html';
 
                 } else {
-                    // REGISTER Logic - new profile fields
                     const res = await fetch(`${API_URL}/auth/register`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            username: document.getElementById('username').value,
-                            password: password,
+                            username,
+                            password,
                             email: document.getElementById('email').value || null,
                             full_name: document.getElementById('fullName').value,
                             phone: document.getElementById('phone').value,
@@ -412,44 +395,33 @@
                         })
                     });
 
-                    let errData = {};
-                    try {
-                        errData = await res.json();
-                    } catch (e) {
-                        console.error('Non-JSON error response:', e);
+                    if (!res.ok) {
+                        let errData = {};
+                        try { errData = await res.json(); } catch (e) { }
+                        throw new Error(errData.detail || 'Error al crear usuario');
                     }
-                    throw new Error(errData.detail || 'Error al crear usuario. Tente outro nome.');
-                }
 
-                // Auto-login after register logic
-                // We need to call login endpoint to get token
-                const loginRes = await fetch(`${API_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
-                });
+                    // Auto-login
+                    const loginRes = await fetch(`${API_URL}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+                    });
 
-                if (!loginRes.ok) throw new Error('Error al iniciar sesión automática');
-
-                const data = await loginRes.json();
-
-                localStorage.setItem('isLoggedIn', 'true');
-                if (data.access_token) {
+                    if (!loginRes.ok) throw new Error('Error en inicio automático');
+                    const data = await loginRes.json();
+                    localStorage.setItem('isLoggedIn', 'true');
                     localStorage.setItem('access_token', data.access_token);
                     localStorage.setItem('user_role', data.user.role || 'user');
                     localStorage.setItem('user_name', data.user.username);
+                    window.location.href = 'index.html';
                 }
-
-                window.location.href = 'index.html';
-            }
-
             } catch (error) {
-            console.error('Error:', error);
-            // Show specific error message from backend
-            showError(error.message || (isLoginMode ? 'Usuario o contraseña incorrectos.' : 'Error al guardar.'));
-            btn.innerHTML = isLoginMode ? 'Ingresar' : 'Registrarse';
-            btn.style.opacity = '1';
-        }
+                console.error('Error:', error);
+                showError(error.message);
+                btn.innerHTML = isLoginMode ? 'Ingresar' : 'Registrarse';
+                btn.style.opacity = '1';
+            }
         });
     </script>
 </body>
