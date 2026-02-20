@@ -4,6 +4,7 @@ import os
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import timedelta, date
+from sqlalchemy.exc import IntegrityError
 from . import crud, models, schemas, database, auth
 
 
@@ -54,6 +55,12 @@ def register_dependent(data: schemas.DependentRegister, db: Session = Depends(ge
     if db_user:
         raise HTTPException(status_code=400, detail="Username já cadastrado.")
     
+    # Verificar se email já existe (se fornecido)
+    if data.email:
+        db_user_email = crud.get_user_by_email(db, email=data.email)
+        if db_user_email:
+            raise HTTPException(status_code=400, detail="Email já cadastrado.")
+    
     # Criar Dependente
     user_in = schemas.UserCreate(
         username=data.username,
@@ -67,6 +74,8 @@ def register_dependent(data: schemas.DependentRegister, db: Session = Depends(ge
         return crud.create_user(db=db, user=user_in, password_hash=password_hash)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except IntegrityError:
+        raise HTTPException(status_code=400, detail="Nome de usuário ou email já existente.")
     except Exception as e:
         print(f"Erro ao criar dependente: {e}")
         raise HTTPException(status_code=500, detail="Erro interno ao criar usuário. Tente outro nome de usuário.")
