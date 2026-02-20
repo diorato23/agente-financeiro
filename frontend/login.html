@@ -347,7 +347,7 @@
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const name = document.getElementById('name').value;
+            const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const btn = document.getElementById('submitBtn');
             const errorDiv = document.getElementById('error-message');
@@ -364,7 +364,7 @@
                     const res = await fetch(`${API_URL}/auth/login`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: `username=${encodeURIComponent(name)}&password=${encodeURIComponent(password)}`
+                        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
                     });
 
                     if (!res.ok) {
@@ -379,8 +379,8 @@
                     localStorage.setItem('isLoggedIn', 'true');
                     if (data.access_token) {
                         localStorage.setItem('access_token', data.access_token);
-                        localStorage.setItem('user_role', data.role || 'user');
-                        localStorage.setItem('user_name', data.name);
+                        localStorage.setItem('user_role', data.user.role || 'user');
+                        localStorage.setItem('user_name', data.user.username);
                     }
 
                     window.location.href = 'index.html';
@@ -412,7 +412,7 @@
                     const loginRes = await fetch(`${API_URL}/auth/login`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: `username=${encodeURIComponent(name)}&password=${encodeURIComponent(password)}`
+                        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
                     });
 
                     if (!loginRes.ok) throw new Error('Error al iniciar sesión automática');
