@@ -60,6 +60,7 @@ const parseAmount = (value) => {
 let transactions = [];
 let budgets = [];
 let categories = [];
+let isParent = false;
 
 // DOM Elements
 const balanceDisplay = document.getElementById('balanceDisplay');
@@ -121,8 +122,15 @@ async function fetchProfile() {
 
         // Show Dependents link if user is a parent (no parent_id)
         const navDependents = document.getElementById('navDependents');
-        if (navDependents && !data.parent_id) {
+        isParent = !data.parent_id;
+        if (navDependents && isParent) {
             navDependents.style.display = 'flex';
+        }
+
+        // Update transaction table header if parent
+        const userHeader = document.getElementById('userTableHeader');
+        if (userHeader) {
+            userHeader.style.display = isParent ? 'table-cell' : 'none';
         }
     } catch (err) {
         // Fallback
@@ -254,8 +262,13 @@ function renderTransactions() {
     transactionList.innerHTML = '';
     transactions.slice().reverse().forEach(t => {
         const row = document.createElement('tr');
+
+        // Coluna de usuário (apenas se for pai)
+        const userCol = isParent ? `<td><span style="font-size: 0.8rem; color: var(--text-muted);">${t.user ? t.user.username : 'Eu'}</span></td>` : '';
+
         row.innerHTML = `
             <td>${formatDateDisplay(t.date)}</td>
+            ${userCol}
             <td>${t.description}</td>
             <td><span class="badge">${t.category}</span></td>
             <td class="amount ${t.type === 'income' ? 'income' : 'expense'}" style="font-size: 1rem;">
@@ -572,19 +585,35 @@ window.generateInvite = async () => {
 };
 
 window.fetchDependents = async () => {
-    // Busca informações dos dependentes (se houver endpoint de listagem, senão apenas texto)
     const list = document.getElementById('dependentsList');
     try {
-        // Opcional: buscar lista de dependentes do backend se implementado
-        // const res = await fetch(`${API_URL}/users/dependents`); ...
-        list.innerHTML = `
-           <p style="text-align:center; padding:1rem;">Convide familiares para usar sua conta.</p>
-           <p style="text-align:center; color: var(--text-muted); font-size: 0.9em;">
-              Use o botão acima para enviar o convite via WhatsApp.
-           </p>
-       `;
+        const res = await fetch(`${API_URL}/users/dependents`);
+        if (!res.ok) throw new Error('Falha ao buscar dependentes');
+        const deps = await res.json();
+
+        if (deps.length === 0) {
+            list.innerHTML = `
+                <p style="text-align:center; padding:1rem;">Nenhum dependente cadastrado ainda.</p>
+                <p style="text-align:center; color: var(--text-muted); font-size: 0.85em;">
+                    Use o botão acima para enviar o convite.
+                </p>
+            `;
+            return;
+        }
+
+        list.innerHTML = deps.map(d => `
+            <div class="budget-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border);">
+                <div>
+                    <div style="font-weight: 600;">${d.username}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Dependente Ativo</div>
+                </div>
+                <i data-lucide="user-check" style="color: #10b981;"></i>
+            </div>
+        `).join('');
+        lucide.createIcons();
     } catch (e) {
         console.error(e);
+        list.innerHTML = '<p style="text-align:center; color: var(--danger);">Erro ao carregar lista.</p>';
     }
 };
 
