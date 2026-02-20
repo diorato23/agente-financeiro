@@ -542,6 +542,36 @@ function setupModals() {
     });
 }
 
+// Dependent Actions
+window.generateInvite = async () => {
+    try {
+        const res = await fetch(`${API_URL}/invite`, { method: 'POST' });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Erro ao gerar convite');
+        }
+        const data = await res.json();
+
+        // Link formatado para WhatsApp
+        const message = `Olá! Entre na nossa conta família de finanças clicando aqui: ${data.invite_link}`;
+        const waLink = `https://wa.me/?text=${encodeURIComponent(message)}`;
+
+        // Abrir em nova aba
+        window.open(waLink, '_blank');
+
+    } catch (err) {
+        console.error(err);
+        showToast(err.message, 'error');
+    }
+};
+
+window.fetchDependents = async () => {
+    // TODO: Implementar listagem se houver endpoint
+    // Por enquanto, apenas o convite é funcional
+    const list = document.getElementById('dependentsList');
+    list.innerHTML = '<p style="text-align:center; padding:1rem;">Convide familiares para usar sua conta.</p>';
+};
+
 // Utils
 // Mobile Sidebar Toggle
 window.toggleSidebar = () => {

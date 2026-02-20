@@ -61,6 +61,16 @@ class UserBase(BaseModel):
     is_active: bool = True
     parent_id: Optional[int] = None
 
+class InviteResponse(BaseModel):
+    invite_link: str
+    token: str
+
+class DependentRegister(BaseModel):
+    token: str
+    username: str
+    password: str
+    email: Optional[str] = None
+
 class UserCreate(UserBase):
     password: str
 

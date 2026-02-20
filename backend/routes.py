@@ -7,6 +7,53 @@ from . import crud, models, schemas, database, auth
 
 router = APIRouter()
 
+# --- Rotas de Convite (Dependentes) ---
+
+@router.post("/invite", response_model=schemas.InviteResponse)
+def generate_invite(current_user: models.User = Depends(auth.get_current_user_required)):
+    # Importação local para evitar ciclo
+    from . import invites
+    # Verifica limite
+    if not invites.check_dependent_limit(current_user.id):
+        raise HTTPException(status_code=400, detail="Limite de dependentes atingido (Máx 4).")
+    
+    token = invites.create_invite_token(current_user.id)
+    # URL do frontend (ajustar conforme necessidade, ou retornar só o token)
+    base_url = os.getenv("FRONTEND_URL", "https://finanzas.ktuche.com") 
+    invite_link = f"{base_url}/cadastro-dependente.html?token={token}"
+    
+    return {"invite_link": invite_link, "token": token}
+
+@router.post("/register-dependent", response_model=schemas.User)
+def register_dependent(data: schemas.DependentRegister, db: Session = Depends(get_db)):
+    from . import invites
+    # Validar Token
+    parent_id = invites.verify_invite_token(data.token)
+    if not parent_id:
+        raise HTTPException(status_code=400, detail="Convite inválido ou expirado.")
+        
+    # Validar Limite novamente (segurança extra)
+    if not invites.check_dependent_limit(parent_id):
+        raise HTTPException(status_code=400, detail="Limite de dependentes atingido.")
+
+    # Verificar se usuário já existe
+    db_user = crud.get_user_by_username(db, username=data.username)
+    if db_user:
+        raise HTTPException(status_code=400, detail="Username já cadastrado.")
+    
+    # Criar Dependente
+    user_in = schemas.UserCreate(
+        username=data.username,
+        email=data.email,
+        password=data.password,
+        role="user",
+        parent_id=parent_id
+    )
+    password_hash = auth.get_password_hash(data.password)
+    return crud.create_user(db=db, user=user_in, password_hash=password_hash)
+
+# --- Fim Rotas Convite ---
+
 def get_db():
     db = database.SessionLocal()
     try:
