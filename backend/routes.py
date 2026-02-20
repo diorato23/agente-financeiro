@@ -63,7 +63,13 @@ def register_dependent(data: schemas.DependentRegister, db: Session = Depends(ge
         parent_id=parent_id
     )
     password_hash = auth.get_password_hash(data.password)
-    return crud.create_user(db=db, user=user_in, password_hash=password_hash)
+    try:
+        return crud.create_user(db=db, user=user_in, password_hash=password_hash)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"Erro ao criar dependente: {e}")
+        raise HTTPException(status_code=500, detail="Erro interno ao criar usuário. Tente outro nome de usuário.")
 
 # --- Fim Rotas Convite ---
 
