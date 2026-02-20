@@ -182,7 +182,12 @@ def create_user(db: Session, user: schemas.UserCreate, password_hash: str):
         password_hash=password_hash,
         role=user.role,
         is_active=user.is_active,
-        parent_id=user.parent_id
+        is_subscriber=user.is_subscriber,
+        parent_id=user.parent_id,
+        full_name=user.full_name,
+        phone=user.phone,
+        birth_date=user.birth_date,
+        currency=user.currency
     )
     db.add(db_user)
     db.commit()
@@ -241,11 +246,19 @@ def get_transactions_filtered(db: Session, filtros: schemas.TransactionFilter, u
     # Lista de IDs para buscar (o próprio usuario + dependentes)
     user_ids = [user_id]
     
-    if user and not user.parent_id:
-        # Se não é dependente (pode ser pai), buscar filhos
-        children = db.query(models.User).filter(models.User.parent_id == user_id).all()
+    if user and (not user.parent_id or user.role == "subadmin"):
+        # Admin ou Subadmin (que pode ver tudo da família)
+        query_parent_id = user_id if not user.parent_id else user.parent_id
+        
+        # Adiciona o ID do "pai" da família (se não for o próprio)
+        if query_parent_id not in user_ids:
+            user_ids.append(query_parent_id)
+            
+        # Buscar todos os dependentes deste pai
+        children = db.query(models.User).filter(models.User.parent_id == query_parent_id).all()
         for child in children:
-            user_ids.append(child.id)
+            if child.id not in user_ids:
+                user_ids.append(child.id)
     
     query = db.query(models.Transaction).filter(models.Transaction.user_id.in_(user_ids))
     

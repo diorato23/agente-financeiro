@@ -571,8 +571,8 @@ window.generateInvite = async () => {
         }
         const data = await res.json();
 
-        // Link formatado para WhatsApp
-        const message = `Olá! Entre na nossa conta família de finanças clicando aqui: ${data.invite_link}`;
+        // Link formatado para WhatsApp (Espanhol)
+        const message = `¡Hola! Te invito a unirte a mi grupo familiar en Agente Financeiro para gestionar nuestros gastos juntos. Regístrate aquí: ${data.invite_link}`;
         const waLink = `https://wa.me/?text=${encodeURIComponent(message)}`;
 
         // Abrir em nova aba

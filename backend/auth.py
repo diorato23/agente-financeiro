@@ -105,11 +105,23 @@ async def get_current_user_required(
 async def require_admin(
     current_user: models.User = Depends(get_current_user_required)
 ) -> models.User:
-    """Requerir que el usuario sea administrador"""
+    """Requerir que el usuario sea administrador (Padre)"""
     if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Se requieren permisos de administrador"
+        )
+    return current_user
+
+
+async def require_any_admin(
+    current_user: models.User = Depends(get_current_user_required)
+) -> models.User:
+    """Requerir que sea admin o subadmin"""
+    if current_user.role not in ["admin", "subadmin"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permisos insuficientes"
         )
     return current_user
 

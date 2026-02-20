@@ -67,11 +67,24 @@ class UserBase(BaseModel):
     email: Optional[str] = None
     role: str = "user"
     is_active: bool = True
+    is_subscriber: bool = False
     parent_id: Optional[int] = None
+    
+    # Novos campos
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    birth_date: Optional[date] = None
+    currency: str = "COP"
 
 class InviteResponse(BaseModel):
     invite_link: str
     token: str
+
+class InviteInfo(BaseModel):
+    parent_id: int
+    parent_username: str
+    current_dependents: int
+    max_dependents: int = 4
 
 class DependentRegister(BaseModel):
     token: str
@@ -89,6 +102,11 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
     password: Optional[str] = None
     parent_id: Optional[int] = None
+    is_subscriber: Optional[bool] = None
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    birth_date: Optional[date] = None
+    currency: Optional[str] = None
 
 class User(UserBase):
     id: int

@@ -13,7 +13,14 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(String, default="user")  # "admin" o "user"
     is_active = Column(Boolean, default=True)
+    is_subscriber = Column(Boolean, default=False)  # Task 4: Bloqueio pré-assinatura
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Novos campos do Perfil
+    full_name = Column(String, nullable=True)
+    phone = Column(String, nullable=True)
+    birth_date = Column(Date, nullable=True)
+    currency = Column(String, default="COP")  # Padrão COP
     
     # Relationships
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")

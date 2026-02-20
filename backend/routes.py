@@ -21,6 +21,8 @@ router = APIRouter()
 
 @router.post("/invite", response_model=schemas.InviteResponse)
 def generate_invite(current_user: models.User = Depends(auth.get_current_user_required)):
+    if current_user.role == "subadmin":
+        raise HTTPException(status_code=403, detail="Subadministradores no pueden generar invitaciones.")
     try:
         # Importação local para evitar ciclo
         from . import invites
@@ -37,6 +39,25 @@ def generate_invite(current_user: models.User = Depends(auth.get_current_user_re
     except Exception as e:
         print(f"Erro ao gerar convite: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/invite/info", response_model=schemas.InviteInfo)
+def get_invite_info(token: str, db: Session = Depends(get_db)):
+    from . import invites
+    parent_id = invites.verify_invite_token(token)
+    if not parent_id:
+        raise HTTPException(status_code=400, detail="Convite inválido ou expirado.")
+    
+    parent = crud.get_user(db, parent_id)
+    if not parent:
+        raise HTTPException(status_code=404, detail="Pai não encontrado.")
+    
+    count = invites.get_dependent_count(parent_id)
+    return {
+        "parent_id": parent_id,
+        "parent_username": parent.username,
+        "current_dependents": count,
+        "max_dependents": 4
+    }
 
 @router.post("/register-dependent", response_model=schemas.User)
 def register_dependent(data: schemas.DependentRegister, db: Session = Depends(get_db)):
@@ -119,7 +140,11 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     
     # Criar usuário
     password_hash = auth.get_password_hash(user.password)
-    return crud.create_user(db=db, user=user, password_hash=password_hash)
+    try:
+        return crud.create_user(db=db, user=user, password_hash=password_hash)
+    except Exception as e:
+        print(f"Erro no registro: {e}")
+        raise HTTPException(status_code=500, detail="Erro ao criar usuário")
 
 
 @router.get("/users/me", response_model=schemas.User)
@@ -144,9 +169,17 @@ def read_users(
     skip: int = 0, 
     limit: int = 100, 
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.require_admin)
+    current_user: models.User = Depends(auth.require_any_admin)
 ):
-    """Listar todos los usuarios (solo admin)"""
+    """Listar todos los usuarios (solo admin/subadmin)"""
+    if current_user.role == "subadmin":
+        # Ver apenas a si mesmo, pai e irmãos
+        parent_id = current_user.parent_id or current_user.id
+        from sqlalchemy import or_
+        return db.query(models.User).filter(
+            or_(models.User.id == parent_id, models.User.parent_id == parent_id)
+        ).all()
+        
     return crud.get_users(db, skip=skip, limit=limit)
 
 
@@ -255,6 +288,8 @@ def create_transaction(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
+    if not current_user.is_subscriber:
+        raise HTTPException(status_code=403, detail="Falta suscripción activa para registrar transacciones.")
     return crud.create_transaction(db=db, transaction=transaction, user_id=current_user.id)
 
 @router.get("/transactions/", response_model=List[schemas.Transaction])
@@ -304,7 +339,7 @@ def update_transaction(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
-    if current_user.parent_id:
+    if current_user.parent_id and current_user.role == "user":
         raise HTTPException(status_code=403, detail="Dependentes não podem editar transações")
         
     db_transaction = crud.update_transaction(db, transaction_id, transaction, user_id=current_user.id)
@@ -318,7 +353,7 @@ def delete_transaction(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
-    if current_user.parent_id:
+    if current_user.parent_id and current_user.role == "user":
         raise HTTPException(status_code=403, detail="Dependentes não podem excluir transações")
         
     crud.delete_transaction(db, transaction_id, user_id=current_user.id)
@@ -421,8 +456,11 @@ def create_budget(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
-    if current_user.parent_id:
+    if current_user.parent_id and current_user.role == "user":
         raise HTTPException(status_code=403, detail="Dependentes não podem criar orçamentos")
+
+    if not current_user.is_subscriber:
+        raise HTTPException(status_code=403, detail="Falta suscripción activa para registrar presupuestos.")
 
     current_budgets = crud.get_budgets(db, user_id=current_user.id)
     for b in current_budgets:
@@ -533,7 +571,7 @@ def create_category(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
-    if current_user.parent_id:
+    if current_user.parent_id and current_user.role == "user":
         raise HTTPException(status_code=403, detail="Dependentes não podem criar categorias")
 
     try:
@@ -548,7 +586,7 @@ def delete_category(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
-    if current_user.parent_id:
+    if current_user.parent_id and current_user.role == "user":
         raise HTTPException(status_code=403, detail="Dependentes não podem excluir categorias")
 
     crud.delete_category(db, category_id, user_id=current_user.id)

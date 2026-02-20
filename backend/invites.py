@@ -30,9 +30,13 @@ def verify_invite_token(token: str) -> Optional[int]:
         return None
 
 def check_dependent_limit(parent_id: int, limit: int = 4) -> bool:
+    count = get_dependent_count(parent_id)
+    return count < limit
+
+def get_dependent_count(parent_id: int) -> int:
     db = SessionLocal()
     try:
         count = db.query(models.User).filter(models.User.parent_id == parent_id).count()
-        return count < limit
+        return count
     finally:
         db.close()

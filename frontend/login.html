@@ -152,7 +152,6 @@
             text-decoration: underline;
         }
 
-        /* Decorative Circles */
         .circle {
             position: fixed;
             border-radius: 50%;
@@ -176,6 +175,27 @@
             right: -20px;
             opacity: 0.15;
         }
+
+        /* Password Strength */
+        .pwd-req {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
+            margin-left: 0.5rem;
+            list-style: none;
+        }
+
+        .pwd-req li.valid {
+            color: #10b981;
+        }
+
+        .pwd-req li.invalid {
+            color: #ef4444;
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -197,13 +217,56 @@
 
         <form id="loginForm">
             <div class="input-group">
-                <label>Tu Nombre</label>
-                <input type="text" id="name" required placeholder="Ej: Juan">
+                <label>Usuario</label>
+                <input type="text" id="username" required placeholder="Ej: juan123">
+            </div>
+
+            <!-- Campos extras para registro -->
+            <div id="regFields" class="hidden">
+                <div class="input-group">
+                    <label>Nombre Completo</label>
+                    <input type="text" id="fullName" placeholder="Ej: Juan Perez">
+                </div>
+                <div class="input-group">
+                    <label>Teléfono</label>
+                    <input type="tel" id="phone" placeholder="+57 300...">
+                </div>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="correo@ejemplo.com">
+                </div>
+                <div class="input-group">
+                    <label>Fecha de Nacimiento</label>
+                    <input type="date" id="birthDate">
+                </div>
+                <div class="input-group">
+                    <label>Moneda</label>
+                    <select id="currency"
+                        style="width: 100%; padding: 0.9rem; border-radius: 12px; border: 2px solid #f3f4f6; background: #f9fafb;">
+                        <option value="COP">COP (Peso Colombiano)</option>
+                        <option value="USD">USD (Dólar)</option>
+                        <option value="BRL">BRL (Real)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Perfil</label>
+                    <select id="role"
+                        style="width: 100%; padding: 0.9rem; border-radius: 12px; border: 2px solid #f3f4f6; background: #f9fafb;">
+                        <option value="admin">Administrador (Padre)</option>
+                        <option value="subadmin">Sub-administrador (Madre)</option>
+                    </select>
+                </div>
             </div>
 
             <div class="input-group">
                 <label>Contraseña</label>
                 <input type="password" id="password" required placeholder="••••••••">
+                <ul id="pwdReqs" class="pwd-req hidden">
+                    <li id="reqLen" class="invalid">○ Mínimo 8 caracteres</li>
+                    <li id="reqUpper" class="invalid">○ Letra mayúscula</li>
+                    <li id="reqNum" class="invalid">○ Al menos um número</li>
+                    <li id="reqSpec" class="invalid">○ Carácter especial (!@#$)</li>
+                </ul>
             </div>
 
             <button type="submit" class="btn-login" id="submitBtn">Ingresar</button>
@@ -226,6 +289,8 @@
             const btn = document.getElementById('submitBtn');
             const toggle = document.getElementById('toggleText');
             const errorDiv = document.getElementById('error-message');
+            const regFields = document.getElementById('regFields');
+            const pwdReqs = document.getElementById('pwdReqs');
 
             if (errorDiv) errorDiv.style.display = 'none';
 
@@ -234,13 +299,41 @@
                 headerP.innerText = 'Ingresa para administrar tus finanzas';
                 btn.innerText = 'Ingresar';
                 toggle.innerHTML = '¿No tienes cuenta? <span onclick="toggleMode()">Crear Cuenta</span>';
+                regFields.classList.add('hidden');
+                pwdReqs.classList.add('hidden');
+                document.getElementById('fullName').required = false;
             } else {
                 headerH1.innerText = 'Crear Cuenta';
                 headerP.innerText = 'Configura tu perfil para empezar';
                 btn.innerText = 'Registrarse';
                 toggle.innerHTML = '¿Ya tienes cuenta? <span onclick="toggleMode()">Ingresar</span>';
+                regFields.classList.remove('hidden');
+                pwdReqs.classList.remove('hidden');
+                document.getElementById('fullName').required = true;
             }
         }
+
+        // Strong Password Validation
+        document.getElementById('password').addEventListener('input', function (e) {
+            if (isLoginMode) return;
+            const pwd = e.target.value;
+
+            const checks = {
+                len: pwd.length >= 8,
+                upper: /[A-Z]/.test(pwd),
+                num: /[0-9]/.test(pwd),
+                spec: /[^A-Za-z0-9]/.test(pwd)
+            };
+
+            document.getElementById('reqLen').className = checks.len ? 'valid' : 'invalid';
+            document.getElementById('reqUpper').className = checks.upper ? 'valid' : 'invalid';
+            document.getElementById('reqNum').className = checks.num ? 'valid' : 'invalid';
+            document.getElementById('reqSpec').className = checks.spec ? 'valid' : 'invalid';
+
+            const allValid = Object.values(checks).every(Boolean);
+            document.getElementById('submitBtn').disabled = !allValid && !isLoginMode;
+            document.getElementById('submitBtn').style.opacity = allValid ? '1' : '0.5';
+        });
 
         function showError(msg) {
             const el = document.getElementById('error-message');
@@ -293,14 +386,19 @@
                     window.location.href = 'index.html';
 
                 } else {
-                    // REGISTER Logic - new public endpoint
+                    // REGISTER Logic - new profile fields
                     const res = await fetch(`${API_URL}/auth/register`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            username: name,
+                            username: document.getElementById('username').value,
                             password: password,
-                            email: null // Optional
+                            email: document.getElementById('email').value || null,
+                            full_name: document.getElementById('fullName').value,
+                            phone: document.getElementById('phone').value,
+                            birth_date: document.getElementById('birthDate').value || null,
+                            currency: document.getElementById('currency').value,
+                            role: document.getElementById('role').value
                         })
                     });
 

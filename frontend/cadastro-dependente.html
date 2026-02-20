@@ -87,30 +87,33 @@
 
 <body>
     <div class="login-card">
-        <h2>Criar Conta (Dependente)</h2>
-        <p style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem;">Você foi convidado para se
-            juntar à família.</p>
+        <h2 id="titleReg">Crear Cuenta (Dependiente)</h2>
+        <p id="inviteSub" style="text-align: center; color: var(--text-muted); margin-bottom: 0.5rem;">Has sido invitado
+            a unirte a la familia.</p>
+        <p id="depCount"
+            style="text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--primary); margin-bottom: 1.5rem; display: none;">
+        </p>
 
         <form id="registerForm">
             <div class="form-group">
-                <label>Nome de Usuário</label>
-                <input type="text" id="username" required placeholder="Ex: filho1">
+                <label>Nombre de Usuario</label>
+                <input type="text" id="username" required placeholder="Ej: hijo1">
             </div>
             <div class="form-group">
-                <label>Email (Opcional)</label>
-                <input type="email" id="email" placeholder="email@exemplo.com">
+                <label>Correo electrónico (Opcional)</label>
+                <input type="email" id="email" placeholder="correo@ejemplo.com">
             </div>
             <div class="form-group">
-                <label>Senha</label>
+                <label>Contraseña</label>
                 <input type="password" id="password" required placeholder="********">
             </div>
-            <button type="submit" id="btnRegister">Criar Conta</button>
+            <button type="submit" id="btnRegister">Crear Cuenta</button>
             <button type="button" onclick="window.location.href='login.html'"
                 style="background: transparent; border: 1px solid var(--border); color: var(--text-main); margin-top: 0.5rem;">Cancelar
-                / Voltar ao Login</button>
+                / Volver al Inicio</button>
         </form>
         <p id="errorMsg" class="error"></p>
-        <p id="successMsg" class="success">Conta criada com sucesso! Redirecionando...</p>
+        <p id="successMsg" class="success">¡Cuenta creada con éxito! Redirigiendo...</p>
     </div>
 
     <script>
@@ -121,7 +124,29 @@
         const token = urlParams.get('token');
 
         if (!token) {
-            document.body.innerHTML = '<h3 style="color:white; text-align:center;">Link inválido ou expirado.</h3>';
+            document.body.innerHTML = '<h3 style="color:white; text-align:center; padding: 2rem;">Enlace inválido o expirado.</h3>';
+        } else {
+            // Buscar info do convite
+            fetchInviteInfo();
+        }
+
+        async function fetchInviteInfo() {
+            try {
+                const res = await fetch(`${API_URL}/invite/info?token=${token}`);
+                if (!res.ok) throw new Error('Invite info failed');
+                const info = await res.json();
+
+                const depCountEl = document.getElementById('depCount');
+                depCountEl.innerText = `${info.current_dependents} de ${info.max_dependents} dependientes registrados`;
+                depCountEl.style.display = 'block';
+
+                if (info.current_dependents >= info.max_dependents) {
+                    document.getElementById('registerForm').innerHTML = '<p style="color:var(--danger); text-align:center;">El límite de dependientes ha sido alcanzado.</p>';
+                    document.getElementById('inviteSub').innerText = "Lo sentimos.";
+                }
+            } catch (err) {
+                console.error(err);
+            }
         }
 
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
@@ -131,7 +156,7 @@
             const successMsg = document.getElementById('successMsg');
 
             btn.disabled = true;
-            btn.innerText = "Criando...";
+            btn.innerText = "Creando...";
             errorMsg.style.display = 'none';
 
             const data = {
@@ -142,7 +167,7 @@
             };
 
             try {
-                const res = await fetch(`${API_URL}/register-dependent`, { // Ajuste para /api se necessário, ou rota direta
+                const res = await fetch(`${API_URL}/register-dependent`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
@@ -150,7 +175,7 @@
 
                 if (!res.ok) {
                     const errInfo = await res.json();
-                    throw new Error(errInfo.detail || 'Erro ao criar conta');
+                    throw new Error(errInfo.detail || 'Error al crear la cuenta');
                 }
 
                 successMsg.style.display = 'block';
@@ -160,7 +185,7 @@
                 errorMsg.innerText = err.message;
                 errorMsg.style.display = 'block';
                 btn.disabled = false;
-                btn.innerText = "Criar Conta";
+                btn.innerText = "Crear Cuenta";
             }
         });
     </script>
