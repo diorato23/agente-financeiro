@@ -1,4 +1,6 @@
-const API_URL = '';
+// Configuração da API
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_URL = isLocal ? 'http://127.0.0.1:8000' : '';
 
 // Interceptor para adicionar token JWT em todas as requisições
 const originalFetch = window.fetch;
