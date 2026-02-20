@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from . import models, database
 
 # Configuración de seguridad
-SECRET_KEY = "agente-financeiro-secret-key-change-in-production"
+import os
+SECRET_KEY = os.getenv("SECRET_KEY", "agente-financeiro-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 horas
 

@@ -1,36 +1,33 @@
 @echo off
 echo ==========================================
-echo      CONFIGURACAO DO AGENTE FINANCEIRO
+echo       Agente Financeiro - Setup
 echo ==========================================
-echo.
 
-cd /d "%~dp0"
-
-echo 1. Verificando Python...
-python --version
+echo [1/4] Verificando Docker...
+docker --version >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [ERRO] Python nao encontrado! Instale o Python 3.10+ e adicione ao PATH.
+    echo [ERRO] Docker nao encontrado. Instale o Docker Desktop.
     pause
     exit /b
 )
 
-echo.
-echo 2. Criando ambiente virtual (venv)...
-if not exist venv (
-    python -m venv venv
-    echo [OK] Ambiente criado.
+echo [2/4] Criando arquivo .env se necessario...
+if not exist .env (
+    echo [AVISO] Arquivo .env nao encontrado. Criando a partir de .env.example...
+    copy .env.example .env
+    echo [!] Por favor, edite o arquivo .env com suas senhas seguras.
 ) else (
-    echo [INFO] Ambiente ja existe.
+    echo [OK] Arquivo .env encontrado.
 )
 
-echo.
-echo 3. Instalando dependencias...
-call venv\Scripts\activate
-pip install -r requirements.txt
+echo [3/4] Construindo e iniciando containers...
+docker compose up -d --build
 
-echo.
+echo [4/4] Verificando status...
+docker compose ps
+
 echo ==========================================
-echo      INSTALACAO CONCLUIDA!
+echo       Deploy Finalizado com Sucesso!
 echo ==========================================
-echo Agora execute o arquivo 'start.bat' para iniciar.
+echo Acesse: http://localhost:8000
 pause
