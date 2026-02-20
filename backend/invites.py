@@ -6,7 +6,7 @@ from .database import SessionLocal
 from . import models
 
 # Configurações do Token de Convite
-INVITE_SECRET_KEY = os.getenv("SECRET_KEY") # Usa a mesma chave por enquanto
+INVITE_SECRET_KEY = os.getenv("SECRET_KEY", "agente-financeiro-secret-key-change-in-production") # Usa a mesma chave por enquanto
 ALGORITHM = "HS256"
 INVITE_EXPIRE_MINUTES = 60 * 24 # 24 horas
 

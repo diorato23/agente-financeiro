@@ -19,18 +19,22 @@ router = APIRouter()
 
 @router.post("/invite", response_model=schemas.InviteResponse)
 def generate_invite(current_user: models.User = Depends(auth.get_current_user_required)):
-    # Importação local para evitar ciclo
-    from . import invites
-    # Verifica limite
-    if not invites.check_dependent_limit(current_user.id):
-        raise HTTPException(status_code=400, detail="Limite de dependentes atingido (Máx 4).")
-    
-    token = invites.create_invite_token(current_user.id)
-    # URL do frontend (ajustar conforme necessidade, ou retornar só o token)
-    base_url = os.getenv("FRONTEND_URL", "https://finanzas.ktuche.com") 
-    invite_link = f"{base_url}/cadastro-dependente.html?token={token}"
-    
-    return {"invite_link": invite_link, "token": token}
+    try:
+        # Importação local para evitar ciclo
+        from . import invites
+        # Verifica limite
+        if not invites.check_dependent_limit(current_user.id):
+            raise HTTPException(status_code=400, detail="Limite de dependentes atingido (Máx 4).")
+        
+        token = invites.create_invite_token(current_user.id)
+        # URL do frontend (ajustar conforme necessidade, ou retornar só o token)
+        base_url = os.getenv("FRONTEND_URL", "https://finanzas.ktuche.com") 
+        invite_link = f"{base_url}/cadastro-dependente.html?token={token}"
+        
+        return {"invite_link": invite_link, "token": token}
+    except Exception as e:
+        print(f"Erro ao gerar convite: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/register-dependent", response_model=schemas.User)
 def register_dependent(data: schemas.DependentRegister, db: Session = Depends(get_db)):
