@@ -222,6 +222,14 @@ def toggle_user(
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     return db_user
 
+@router.get("/users/dependents", response_model=List[schemas.UserSimple])
+def read_dependents(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    """Listar dependentes do usuário logado"""
+    return crud.get_dependents(db, current_user.id)
+
 
 # ============ TRANSACTIONS ============
 

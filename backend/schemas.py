@@ -9,6 +9,12 @@ class TransactionBase(BaseModel):
     category: str
     date: date
 
+class UserSimple(BaseModel):
+    id: int
+    username: str
+    class Config:
+        from_attributes = True
+
 class TransactionCreate(TransactionBase):
     pass
 
@@ -21,6 +27,8 @@ class TransactionUpdate(BaseModel):
 
 class Transaction(TransactionBase):
     id: int
+    user_id: int
+    user: Optional[UserSimple] = None  # Para mostrar quem fez a transação (pai/filho)
     class Config:
         from_attributes = True
 

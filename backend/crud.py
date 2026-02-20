@@ -224,6 +224,10 @@ def toggle_user_active(db: Session, user_id: int):
         db.refresh(db_user)
     return db_user
 
+def get_dependents(db: Session, user_id: int):
+    """Obter dependentes de um usuário"""
+    return db.query(models.User).filter(models.User.parent_id == user_id).all()
+
 
 # ============ TRANSACTION SEARCH & FILTERS ============
 
