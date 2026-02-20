@@ -118,6 +118,12 @@ async function fetchProfile() {
         // Use 'username' from User schema
         const name = data.username || "Usuario";
         document.getElementById('userNameDisplay').innerText = `Hola, ${name}`;
+
+        // Show Dependents link if user is a parent (no parent_id)
+        const navDependents = document.getElementById('navDependents');
+        if (navDependents && !data.parent_id) {
+            navDependents.style.display = 'flex';
+        }
     } catch (err) {
         // Fallback
         const storedName = localStorage.getItem('user_name');
@@ -566,10 +572,20 @@ window.generateInvite = async () => {
 };
 
 window.fetchDependents = async () => {
-    // TODO: Implementar listagem se houver endpoint
-    // Por enquanto, apenas o convite é funcional
+    // Busca informações dos dependentes (se houver endpoint de listagem, senão apenas texto)
     const list = document.getElementById('dependentsList');
-    list.innerHTML = '<p style="text-align:center; padding:1rem;">Convide familiares para usar sua conta.</p>';
+    try {
+        // Opcional: buscar lista de dependentes do backend se implementado
+        // const res = await fetch(`${API_URL}/users/dependents`); ...
+        list.innerHTML = `
+           <p style="text-align:center; padding:1rem;">Convide familiares para usar sua conta.</p>
+           <p style="text-align:center; color: var(--text-muted); font-size: 0.9em;">
+              Use o botão acima para enviar o convite via WhatsApp.
+           </p>
+       `;
+    } catch (e) {
+        console.error(e);
+    }
 };
 
 // Utils
@@ -585,6 +601,10 @@ window.switchTab = (tabId) => {
     // Hide all views
     document.querySelectorAll('.view').forEach(el => el.style.display = 'none');
     document.getElementById(tabId).style.display = 'block';
+
+    if (tabId === 'dependents') {
+        fetchDependents();
+    }
 
     // Update active state in sidebar
     document.querySelectorAll('.sidebar nav a').forEach(el => el.classList.remove('active'));
