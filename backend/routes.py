@@ -142,9 +142,18 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     password_hash = auth.get_password_hash(user.password)
     try:
         return crud.create_user(db=db, user=user, password_hash=password_hash)
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Dados duplicados ou erro de integridade. Verifique usuário/email.")
+    except ValueError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        db.rollback()
+        import traceback
+        traceback.print_exc()
         print(f"Erro no registro: {e}")
-        raise HTTPException(status_code=500, detail="Erro ao criar usuário")
+        raise HTTPException(status_code=500, detail=f"Erro interno ao criar usuário: {str(e)}")
 
 
 @router.get("/users/me", response_model=schemas.User)
