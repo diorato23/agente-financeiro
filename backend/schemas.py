@@ -8,6 +8,10 @@ class TransactionBase(BaseModel):
     type: str
     category: str
     date: date
+    # Feature #17 — Recorrência
+    is_recurring: bool = False
+    recurrence_day: Optional[int] = None  # Dia do mês (1-31)
+    recurrence_active: bool = True
 
 class UserSimple(BaseModel):
     id: int
@@ -31,6 +35,31 @@ class Transaction(TransactionBase):
     user: Optional[UserSimple] = None  # Para mostrar quem fez a transação (pai/filho)
     class Config:
         from_attributes = True
+
+
+# Feature #6 — Status de Orçamento
+class BudgetStatus(BaseModel):
+    category: str
+    limit_amount: float
+    spent: float
+    percentage: float
+    alert: bool  # True se >= 80%
+    exceeded: bool  # True se >= 100%
+
+
+# Feature #3 — Analytics por Categoria
+class CategoryData(BaseModel):
+    category: str
+    total: float
+    percentage: float
+    count: int
+
+class CategoryAnalytics(BaseModel):
+    period: str
+    expenses_by_category: List[CategoryData]
+    income_by_category: List[CategoryData]
+    total_expenses: float
+    total_income: float
 
 class BudgetBase(BaseModel):
     category: str

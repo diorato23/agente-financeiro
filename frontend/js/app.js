@@ -96,8 +96,10 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchSummary();
     fetchTransactions();
     fetchBudgets();
+    fetchBudgetStatus();   // Feature #6
     fetchCategories();
     fetchProfile();
+    applyRecurringTransactions(); // Feature #17 — aplica recorrentes do mês
     setupModals();
 });
 
@@ -164,6 +166,62 @@ async function fetchBudgets() {
         const res = await fetch(`${API_URL}/budgets/`);
         budgets = await res.json();
         renderBudgetsMgmt();
+    } catch (err) { console.error(err); }
+}
+
+// Feature #6 — Alertas de Orçamento
+async function fetchBudgetStatus() {
+    try {
+        const res = await fetch(`${API_URL}/budgets/status/`);
+        if (!res.ok) return; // Dependentes não têm status de orçamento
+        const statusList = await res.json();
+        renderBudgetStatusAlerts(statusList);
+    } catch (err) { console.error(err); }
+}
+
+function renderBudgetStatusAlerts(statusList) {
+    const container = document.getElementById('budgetAlerts');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (statusList.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted)">Nenhum orçamento configurado.</p>';
+        return;
+    }
+
+    statusList.forEach(b => {
+        const pct = Math.min(b.percentage, 100);
+        const color = b.exceeded ? '#ef4444' : b.alert ? '#f59e0b' : '#10b981';
+        const label = b.exceeded ? '🔴 Excedido' : b.alert ? '🟡 Atenção' : '🟢 OK';
+        container.innerHTML += `
+            <div class="budget-item" style="margin-bottom:1rem;">
+                <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+                    <strong>${b.category}</strong>
+                    <span style="color:${color}; font-size:0.8rem;">${label} — ${b.percentage}%</span>
+                </div>
+                <div class="progress-bar" style="height:8px; background:var(--border); border-radius:4px; margin:0.4rem 0;">
+                    <div style="width:${pct}%; height:100%; background:${color}; border-radius:4px; transition:width 0.4s;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted);">
+                    <span>Gasto: ${formatCurrency(b.spent)}</span>
+                    <span>Limite: ${formatCurrency(b.limit_amount)}</span>
+                </div>
+            </div>
+        `;
+    });
+}
+
+// Feature #17 — Aplicar transações recorrentes do mês
+async function applyRecurringTransactions() {
+    try {
+        const res = await fetch(`${API_URL}/transactions/apply-recurring/`, { method: 'POST' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.applied > 0) {
+            showToast(`🔄 ${data.applied} transação(ões) recorrente(s) aplicada(s) este mês!`, 'success');
+            fetchSummary();
+            fetchTransactions();
+        }
     } catch (err) { console.error(err); }
 }
 
@@ -476,7 +534,12 @@ function setupModals() {
             amount: parseAmount(rawAmount),
             description: document.getElementById('description').value,
             category: document.getElementById('category').value,
-            date: document.getElementById('date').value
+            date: document.getElementById('date').value,
+            // Feature #17 — Recorrência
+            is_recurring: document.getElementById('isRecurring')?.checked || false,
+            recurrence_day: document.getElementById('isRecurring')?.checked
+                ? parseInt(document.getElementById('recurrenceDay')?.value || 0) || null
+                : null
         };
 
         const method = id ? 'PUT' : 'POST';
@@ -660,31 +723,63 @@ window.onclick = (e) => {
     if (e.target.classList.contains('modal')) e.target.style.display = 'none';
 };
 
-function updateCharts() {
-    if (window.myChart) window.myChart.destroy();
-    const ctx = document.getElementById('categoryChart').getContext('2d');
-    const expenses = transactions.filter(t => t.type === 'expense');
-    const categories = {};
-    expenses.forEach(t => categories[t.category] = (categories[t.category] || 0) + t.amount);
+// Feature #3 — Análise por Categoria (usa endpoint de analytics)
+async function updateCharts(period = null) {
+    try {
+        let url = `${API_URL}/analytics/categories/`;
+        if (period) url += `?period=${period}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('analytics error');
+        const data = await res.json();
 
-    window.myChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(categories),
-            datasets: [{
-                data: Object.values(categories),
-                backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { position: 'bottom', labels: { color: '#6b7280' } }
-            }
+        if (window.myChart) window.myChart.destroy();
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        const labels = data.expenses_by_category.map(c => c.category);
+        const values = data.expenses_by_category.map(c => c.total);
+
+        if (labels.length === 0) {
+            ctx.canvas.parentElement.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem;">Sem despesas no período</p>';
+            return;
         }
-    });
+
+        window.myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#6b7280' } },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.label}: ${formatCurrency(ctx.raw)} (${data.expenses_by_category[ctx.dataIndex].percentage}%)`
+                        }
+                    }
+                }
+            }
+        });
+    } catch (err) {
+        // Fallback: usar dados locais de transactions
+        if (window.myChart) window.myChart.destroy();
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        const cats = {};
+        transactions.filter(t => t.type === 'expense').forEach(t => cats[t.category] = (cats[t.category] || 0) + t.amount);
+        window.myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(cats),
+                datasets: [{ data: Object.values(cats), backgroundColor: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1'], borderWidth: 0 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#6b7280' } } } }
+        });
+    }
 }
 
 // Toast Notification System

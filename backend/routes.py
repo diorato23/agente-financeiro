@@ -652,3 +652,65 @@ def login_legacy(login_data: schemas.LoginSchema, db: Session = Depends(get_db))
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
     return {"ok": True, "name": login_data.name, "role": "admin"}
 
+
+# ============ FEATURE #17 — TRANSAÇÕES RECORRENTES ============
+
+@router.get("/transactions/recurring/", response_model=List[schemas.Transaction])
+def get_recurring_transactions(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    """Lista todas as transações recorrentes configuradas"""
+    return crud.get_recurring_transactions(db, user_id=current_user.id)
+
+@router.post("/transactions/apply-recurring/")
+def apply_recurring_transactions(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    """Aplica transações recorrentes do mês atual. Idempotente — pode chamar várias vezes."""
+    criadas = crud.apply_recurring_transactions(db, user_id=current_user.id)
+    return {"applied": len(criadas), "transactions": [t.id for t in criadas]}
+
+@router.delete("/transactions/recurring/{transaction_id}")
+def deactivate_recurring(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    """Desativa uma transação recorrente"""
+    t = db.query(models.Transaction).filter(
+        models.Transaction.id == transaction_id,
+        models.Transaction.user_id == current_user.id,
+        models.Transaction.is_recurring == True
+    ).first()
+    if not t:
+        raise HTTPException(status_code=404, detail="Transação recorrente não encontrada")
+    t.recurrence_active = False
+    db.commit()
+    return {"ok": True}
+
+
+# ============ FEATURE #6 — ALERTAS DE ORÇAMENTO ============
+
+@router.get("/budgets/status/", response_model=List[schemas.BudgetStatus])
+def get_budget_status(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    """Retorna o status dos orçamentos com % de uso no mês atual"""
+    if current_user.parent_id:
+        raise HTTPException(status_code=403, detail="Dependentes não têm orçamentos")
+    return crud.get_budget_status(db, user_id=current_user.id)
+
+
+# ============ FEATURE #3 — ANALYTICS POR CATEGORIA ============
+
+@router.get("/analytics/categories/", response_model=schemas.CategoryAnalytics)
+def get_category_analytics(
+    period: str = None,  # Formato: "YYYY-MM", ex: "2026-02"
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user_required)
+):
+    """Retorna análise de gastos e receitas por categoria no mês especificado"""
+    return crud.get_category_analytics(db, user_id=current_user.id, period=period)

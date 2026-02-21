@@ -42,7 +42,12 @@ class Transaction(Base):
     category = Column(String, index=True)
     date = Column(Date)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    
+
+    # Feature #17 — Transações Recorrentes
+    is_recurring = Column(Boolean, default=False)
+    recurrence_day = Column(Integer, nullable=True)  # Dia do mês (1-31)
+    recurrence_active = Column(Boolean, default=True)
+
     # Relationship
     user = relationship("User", back_populates="transactions")
 

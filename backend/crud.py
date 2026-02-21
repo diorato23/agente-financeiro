@@ -412,3 +412,175 @@ def get_transactions_by_period(db: Session, data_inicio, data_fim, user_id: int,
     
     return transacoes, evolucao
 
+
+# ============ FEATURE #17 — TRANSAÇÕES RECORRENTES ============
+
+def get_recurring_transactions(db: Session, user_id: int):
+    """Lista todas as transações recorrentes ativas do usuário"""
+    return db.query(models.Transaction).filter(
+        models.Transaction.user_id == user_id,
+        models.Transaction.is_recurring == True
+    ).all()
+
+def apply_recurring_transactions(db: Session, user_id: int):
+    """Aplica transações recorrentes no mês atual (idempotente)"""
+    from datetime import date
+    today = date.today()
+    current_month = today.month
+    current_year = today.year
+
+    recorrentes = get_recurring_transactions(db, user_id)
+    criadas = []
+
+    for r in recorrentes:
+        if not r.recurrence_active or not r.recurrence_day:
+            continue
+
+        # Verificar se já foi aplicada este mês
+        existing = db.query(models.Transaction).filter(
+            models.Transaction.user_id == user_id,
+            models.Transaction.description == r.description,
+            models.Transaction.amount == r.amount,
+            models.Transaction.category == r.category,
+            models.Transaction.is_recurring == False,
+        ).filter(
+            models.Transaction.date >= date(current_year, current_month, 1)
+        ).first()
+
+        if existing:
+            continue  # Já aplicada este mês
+
+        import calendar
+        ultimo_dia = calendar.monthrange(current_year, current_month)[1]
+        dia = min(r.recurrence_day, ultimo_dia)
+        target_date = date(current_year, current_month, dia)
+
+        nova = models.Transaction(
+            description=r.description,
+            amount=r.amount,
+            type=r.type,
+            category=r.category,
+            date=target_date,
+            user_id=user_id,
+            is_recurring=False,
+            recurrence_day=None,
+            recurrence_active=True
+        )
+        db.add(nova)
+        criadas.append(nova)
+
+    if criadas:
+        db.commit()
+        for t in criadas:
+            db.refresh(t)
+
+    return criadas
+
+
+# ============ FEATURE #6 — STATUS DE ORÇAMENTO ============
+
+def get_budget_status(db: Session, user_id: int):
+    """Retorna status de todos os orçamentos com % do gasto atual no mês"""
+    from datetime import date
+    today = date.today()
+    inicio_mes = date(today.year, today.month, 1)
+
+    budgets = get_budgets(db, user_id)
+    status_list = []
+
+    for budget in budgets:
+        spent_rows = db.query(models.Transaction).filter(
+            models.Transaction.user_id == user_id,
+            models.Transaction.category == budget.category,
+            models.Transaction.type == "expense",
+            models.Transaction.date >= inicio_mes,
+            models.Transaction.date <= today
+        ).all()
+
+        total_spent = sum(t.amount for t in spent_rows)
+        percentage = (total_spent / budget.limit_amount * 100) if budget.limit_amount > 0 else 0
+
+        status_list.append(schemas.BudgetStatus(
+            category=budget.category,
+            limit_amount=budget.limit_amount,
+            spent=round(total_spent, 2),
+            percentage=round(percentage, 1),
+            alert=percentage >= 80,
+            exceeded=percentage >= 100
+        ))
+
+    return status_list
+
+
+# ============ FEATURE #3 — ANALYTICS POR CATEGORIA ============
+
+def get_category_analytics(db: Session, user_id: int, period: str = None):
+    """Retorna analytics de gastos e receitas agrupados por categoria"""
+    from datetime import date
+    import calendar
+
+    today = date.today()
+
+    if period:
+        try:
+            year, month = int(period.split("-")[0]), int(period.split("-")[1])
+        except Exception:
+            year, month = today.year, today.month
+    else:
+        year, month = today.year, today.month
+
+    inicio = date(year, month, 1)
+    ultimo_dia = calendar.monthrange(year, month)[1]
+    fim = date(year, month, ultimo_dia)
+    period_str = f"{year}-{month:02d}"
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    user_ids = [user_id]
+    if user and not user.parent_id:
+        children = db.query(models.User).filter(models.User.parent_id == user_id).all()
+        for c in children:
+            user_ids.append(c.id)
+
+    transacoes = db.query(models.Transaction).filter(
+        models.Transaction.user_id.in_(user_ids),
+        models.Transaction.date >= inicio,
+        models.Transaction.date <= fim
+    ).all()
+
+    despesas = {}
+    receitas = {}
+    total_despesas = 0.0
+    total_receitas = 0.0
+
+    for t in transacoes:
+        if t.type == "expense":
+            total_despesas += t.amount
+            if t.category not in despesas:
+                despesas[t.category] = {"total": 0.0, "count": 0}
+            despesas[t.category]["total"] += t.amount
+            despesas[t.category]["count"] += 1
+        else:
+            total_receitas += t.amount
+            if t.category not in receitas:
+                receitas[t.category] = {"total": 0.0, "count": 0}
+            receitas[t.category]["total"] += t.amount
+            receitas[t.category]["count"] += 1
+
+    def build_list(data, total):
+        result = []
+        for cat, vals in sorted(data.items(), key=lambda x: x[1]["total"], reverse=True):
+            result.append(schemas.CategoryData(
+                category=cat,
+                total=round(vals["total"], 2),
+                percentage=round(vals["total"] / total * 100, 1) if total > 0 else 0,
+                count=vals["count"]
+            ))
+        return result
+
+    return schemas.CategoryAnalytics(
+        period=period_str,
+        expenses_by_category=build_list(despesas, total_despesas),
+        income_by_category=build_list(receitas, total_receitas),
+        total_expenses=round(total_despesas, 2),
+        total_income=round(total_receitas, 2)
+    )
