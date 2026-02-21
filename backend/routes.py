@@ -151,9 +151,13 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         import traceback
-        traceback.print_exc()
-        print(f"Erro no registro: {e}")
-        raise HTTPException(status_code=500, detail=f"Erro interno ao criar usuário: {str(e)}")
+        error_detail = traceback.format_exc()
+        print(f"❌ ERRO CRÍTICO NO REGISTRO:\n{error_detail}")
+        # Retorna o detalhe do erro se estiver em desenvolvimento ou log resumido
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error interno al crear usuario. Detalle técnico: {str(e)}"
+        )
 
 
 @router.get("/users/me", response_model=schemas.User)
@@ -297,7 +301,12 @@ def create_transaction(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
-    if not current_user.is_subscriber:
+    # Verifica assinatura (considera o pai caso seja dependente)
+    effective_user = current_user
+    if current_user.parent_id:
+        effective_user = db.query(models.User).filter(models.User.id == current_user.parent_id).first()
+    
+    if not (effective_user and effective_user.is_subscriber):
         raise HTTPException(status_code=403, detail="Falta suscripción activa para registrar transacciones.")
     return crud.create_transaction(db=db, transaction=transaction, user_id=current_user.id)
 
@@ -468,7 +477,12 @@ def create_budget(
     if current_user.parent_id and current_user.role == "user":
         raise HTTPException(status_code=403, detail="Dependentes não podem criar orçamentos")
 
-    if not current_user.is_subscriber:
+    # Verifica assinatura (considera o pai caso seja dependente)
+    effective_user = current_user
+    if current_user.parent_id:
+        effective_user = db.query(models.User).filter(models.User.id == current_user.parent_id).first()
+
+    if not (effective_user and effective_user.is_subscriber):
         raise HTTPException(status_code=403, detail="Falta suscripción activa para registrar presupuestos.")
 
     current_budgets = crud.get_budgets(db, user_id=current_user.id)
