@@ -13,7 +13,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     role = Column(String, default="user")  # "admin" o "user"
     is_active = Column(Boolean, default=True)
-    is_subscriber = Column(Boolean, default=False)  # Task 4: Bloqueio pré-assinatura
+    is_subscriber = Column(Boolean, default=True)  # True durante fase de testes — mudar para False ao monetizar
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Novos campos do Perfil
