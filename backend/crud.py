@@ -217,7 +217,7 @@ def update_user(db: Session, user_id: int, user_update: schemas.UserUpdate, pass
     return db_user
 
 def toggle_user_status(db: Session, user_id: int):
-    """Alternar entre activo/inactivo"""
+    """Alternar entre activo/inactivo (para Admin)"""
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if db_user:
         db_user.is_active = not db_user.is_active
@@ -231,15 +231,6 @@ def delete_user(db: Session, user_id: int):
     if db_user:
         db.delete(db_user)
         db.commit()
-    return db_user
-
-def toggle_user_active(db: Session, user_id: int):
-    """Activar/Inactivar usuario"""
-    db_user = db.query(models.User).filter(models.User.id == user_id).first()
-    if db_user:
-        db_user.is_active = not db_user.is_active
-        db.commit()
-        db.refresh(db_user)
     return db_user
 
 def get_dependents(db: Session, user_id: int):

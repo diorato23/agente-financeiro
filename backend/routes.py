@@ -200,7 +200,15 @@ def create_user(
         raise HTTPException(status_code=400, detail="Email ya existe")
     
     password_hash = auth.get_password_hash(user.password)
-    return crud.create_user(db=db, user=user, password_hash=password_hash)
+    try:
+        return crud.create_user(db=db, user=user, password_hash=password_hash)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except IntegrityError:
+        raise HTTPException(status_code=400, detail="Usuario o correo ya existente.")
+    except Exception as e:
+        print(f"Error al crear usuario: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
 
 
 @router.get("/users/{user_id}", response_model=schemas.User)
@@ -243,7 +251,15 @@ def update_user(
     if user_update.password:
         password_hash = auth.get_password_hash(user_update.password)
     
-    return crud.update_user(db, user_id, user_update, password_hash)
+    try:
+        return crud.update_user(db, user_id, user_update, password_hash)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except IntegrityError:
+        raise HTTPException(status_code=400, detail="Datos duplicados o error de integridad.")
+    except Exception as e:
+        print(f"Error al actualizar usuario: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor.")
 
 
 @router.patch("/users/{user_id}/toggle", response_model=schemas.User)
