@@ -85,8 +85,12 @@ class LoginSchema(BaseModel):
 
 class Profile(ProfileBase):
     id: int
+    # M1 FIX: 'password' não está listado aqui — não vaza na resposta da API
     class Config:
         from_attributes = True
+        # Garante que password nunca seja serializado mesmo que o ORM o carregue
+        fields = {'password': {'exclude': True}}
+
 
 
 # ============ USERS ============
