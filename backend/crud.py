@@ -191,16 +191,23 @@ def update_user(db: Session, user_id: int, user_update: schemas.UserUpdate, pass
     """Actualizar usuario"""
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if db_user:
-        if user_update.username is not None:
-            db_user.username = user_update.username
-        if user_update.email is not None:
-            db_user.email = user_update.email
-        if user_update.role is not None:
-            db_user.role = user_update.role
-        if user_update.is_active is not None:
-            db_user.is_active = user_update.is_active
+        update_data = user_update.dict(exclude_unset=True)
         if password_hash:
             db_user.password_hash = password_hash
+        
+        for key, value in update_data.items():
+            if key != 'password':
+                setattr(db_user, key, value)
+        
+        db.commit()
+        db.refresh(db_user)
+    return db_user
+
+def toggle_user_status(db: Session, user_id: int):
+    """Alternar entre activo/inactivo"""
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if db_user:
+        db_user.is_active = not db_user.is_active
         db.commit()
         db.refresh(db_user)
     return db_user

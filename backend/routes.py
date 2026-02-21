@@ -246,6 +246,18 @@ def update_user(
     return crud.update_user(db, user_id, user_update, password_hash)
 
 
+@router.patch("/users/{user_id}/toggle", response_model=schemas.User)
+def toggle_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_admin)
+):
+    """Activar/Inactivar usuario (solo admin)"""
+    db_user = crud.toggle_user_status(db, user_id)
+    if db_user is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return db_user
+
 @router.delete("/users/{user_id}")
 def delete_user(
     user_id: int,

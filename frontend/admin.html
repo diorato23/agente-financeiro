@@ -1031,9 +1031,12 @@
                 renderUsers(filteredUsers);
             } catch (err) {
                 console.error('Error loading users:', err);
-                document.getElementById('skeleton1').style.display = 'none';
-                document.getElementById('emptyState').style.display = 'block';
-                document.getElementById('userCountLabel').textContent = 'Error al cargar usuarios';
+                const skeleton = document.getElementById('skeleton1');
+                if (skeleton) skeleton.style.display = 'none';
+                const empty = document.getElementById('emptyState');
+                if (empty) empty.style.display = 'block';
+                const countLabel = document.getElementById('userCountLabel');
+                if (countLabel) countLabel.textContent = 'Error al cargar usuarios';
             }
         }
 
@@ -1077,7 +1080,8 @@
         function renderUsers(list) {
             const container = document.getElementById('usersList');
             const emptyState = document.getElementById('emptyState');
-            document.getElementById('skeleton1').style.display = 'none';
+            const skeleton = document.getElementById('skeleton1');
+            if (skeleton) skeleton.style.display = 'none';
 
             document.getElementById('userCountLabel').textContent =
                 `${list.length} usuario${list.length !== 1 ? 's' : ''} encontrado${list.length !== 1 ? 's' : ''}`;
