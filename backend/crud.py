@@ -156,6 +156,8 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     """Obtener lista de usuarios"""
     return db.query(models.User).offset(skip).limit(limit).all()
 
+def create_user(db: Session, user: schemas.UserCreate, password_hash: str):
+    """Crear usuario"""
     # Validar se o novo usuário será Admin (apenas um permitido no sistema)
     if user.role == "admin":
         admin_count = db.query(models.User).filter(models.User.role == "admin").count()
