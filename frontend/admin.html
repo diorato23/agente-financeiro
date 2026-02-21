@@ -984,13 +984,32 @@
             lucide.createIcons();
         });
 
-        function checkAuth() {
+        async function checkAuth() {
             const token = localStorage.getItem('access_token');
-            const role = localStorage.getItem('user_role');
             if (!token) { window.location.href = 'login.html'; return; }
-            if (role !== 'admin') {
-                alert('Acceso denegado. Se requieren permisos de administrador.');
-                window.location.href = 'index.html';
+
+            // H5 FIX: Verifica role via API, não só via localStorage
+            try {
+                const res = await fetch(`${API_URL}/users/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.status === 401 || res.status === 403) {
+                    // Token expirado ou inválido — M6 FIX: redireciona para login
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('user_role');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                const me = await res.json();
+                if (me.role !== 'admin') {
+                    alert('Acceso denegado. Se requieren permisos de administrador.');
+                    window.location.href = 'index.html';
+                }
+                // Sincroniza localStorage com valor real da API
+                localStorage.setItem('user_role', me.role);
+            } catch (err) {
+                console.error('Erro ao verificar autenticação:', err);
+                window.location.href = 'login.html';
             }
         }
 

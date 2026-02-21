@@ -27,7 +27,7 @@ class TransactionUpdate(BaseModel):
     amount: Optional[float] = None
     type: Optional[str] = None
     category: Optional[str] = None
-    date: Optional[str] = None
+    date: Optional[date] = None
 
 class Transaction(TransactionBase):
     id: int

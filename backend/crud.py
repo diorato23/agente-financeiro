@@ -61,14 +61,14 @@ def create_budget(db: Session, budget: schemas.BudgetCreate, user_id: int):
         models.Budget.user_id == user_id
     ).first()
     if db_budget:
-        # Já existe, não criar duplicado
-        pass
+        return db_budget  # BUG FIX: retorna o existente em vez de criar duplicata
     
     db_budget = models.Budget(**budget.dict(), user_id=user_id)
     db.add(db_budget)
     db.commit()
     db.refresh(db_budget)
     return db_budget
+
 
 def update_budget(db: Session, budget_id: int, budget: schemas.BudgetBase, user_id: int):
     db_budget = db.query(models.Budget).filter(models.Budget.id == budget_id, models.Budget.user_id == user_id).first()

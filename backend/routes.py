@@ -601,17 +601,25 @@ def delete_category(
     return {"ok": True}
 
 
-# ============ PROFILE (deprecated - backward compatibility) ============
+# ============ PROFILE (DEPRECATED — será removido em breve) ============
+# TODO: Remover estas rotas após migração completa para /users/me
 
 @router.get("/profile", response_model=schemas.Profile)
-def read_profile(db: Session = Depends(get_db)):
+def read_profile(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_admin)  # H2 FIX: exige auth
+):
     profile = crud.get_profile(db)
     if not profile:
         profile = crud.update_profile(db, "admin", "1234")
     return profile
 
 @router.put("/profile", response_model=schemas.Profile)
-def update_profile(profile: schemas.ProfileCreate, db: Session = Depends(get_db)):
+def update_profile(
+    profile: schemas.ProfileCreate, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.require_admin)  # H2 FIX: exige auth
+):
     return crud.update_profile(db, profile.name, profile.password)
 
 @router.post("/login")

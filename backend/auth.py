@@ -139,16 +139,20 @@ def authenticate_user(db: Session, username: str, password: str) -> Optional[mod
 
 
 def create_default_admin(db: Session):
-    """Crear usuario admin por defecto si no existe ningún usuario"""
+    """Criar usuario admin por defecto si no existe ningún usuario"""
     existing_user = db.query(models.User).first()
     if not existing_user:
+        default_password = os.getenv("ADMIN_DEFAULT_PASSWORD", "admin123")
+        if default_password == "admin123":
+            print("⚠️  AVISO: Usando senha admin padrão. Defina ADMIN_DEFAULT_PASSWORD no .env!")
         admin_user = models.User(
             username="admin",
             email="admin@localhost",
-            password_hash=get_password_hash("admin123"),
+            password_hash=get_password_hash(default_password),
             role="admin",
             is_active=True
         )
         db.add(admin_user)
         db.commit()
-        print("✅ Usuario admin creado: admin / admin123")
+        print(f"✅ Usuario admin creado: admin / {default_password}")
+
