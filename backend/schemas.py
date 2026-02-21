@@ -101,16 +101,16 @@ class Profile(ProfileBase):
 class UserBase(BaseModel):
     username: str
     email: Optional[str] = None
-    role: str = "user"
-    is_active: bool = True
-    is_subscriber: bool = False
+    role: Optional[str] = "user"
+    is_active: Optional[bool] = True
+    is_subscriber: Optional[bool] = False
     parent_id: Optional[int] = None
     
     # Novos campos
     full_name: Optional[str] = None
     phone: Optional[str] = None
     birth_date: Optional[date] = None
-    currency: str = "COP"
+    currency: Optional[str] = "COP"
 
 class InviteResponse(BaseModel):
     invite_link: str
@@ -146,7 +146,7 @@ class UserUpdate(BaseModel):
 
 class User(UserBase):
     id: int
-    created_at: datetime
+    created_at: Optional[datetime] = None
     # parent_id já herdado de UserBase
     class Config:
         from_attributes = True
