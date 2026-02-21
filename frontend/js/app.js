@@ -914,9 +914,10 @@ window.generateReport = async () => {
 function renderReport(data) {
     // Mostrar cards de estatísticas
     document.getElementById('reportStatsCards').style.display = 'grid';
-    document.getElementById('reportTotalReceitas').textContent = formatCurrency(data.estatisticas.total_receitas);
-    document.getElementById('reportTotalDespesas').textContent = formatCurrency(data.estatisticas.total_despesas);
-    document.getElementById('reportSaldo').textContent = formatCurrency(data.estatisticas.saldo);
+    // Backend retorna: income, expenses, balance, quantidade_transacoes
+    document.getElementById('reportTotalReceitas').textContent = formatCurrency(data.estatisticas.income);
+    document.getElementById('reportTotalDespesas').textContent = formatCurrency(data.estatisticas.expenses);
+    document.getElementById('reportSaldo').textContent = formatCurrency(data.estatisticas.balance);
     document.getElementById('reportQuantidade').textContent = data.estatisticas.quantidade_transacoes;
 
     // Renderizar gráfico de evolução
@@ -1040,6 +1041,17 @@ function initTheme() {
     const saved = localStorage.getItem('theme') || 'system';
     applyTheme(saved);
     updateThemeButtons(saved);
+
+    // Adicionar event listeners nos botões de tema (evita 'setTheme not defined' com onclick inline)
+    const themeButtons = [
+        { id: 'theme-system', theme: 'system' },
+        { id: 'theme-light', theme: 'light' },
+        { id: 'theme-dark', theme: 'dark' }
+    ];
+    themeButtons.forEach(({ id, theme }) => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', () => setTheme(theme));
+    });
 }
 
 /**

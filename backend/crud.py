@@ -25,30 +25,54 @@ def create_transaction(db: Session, transaction: schemas.TransactionCreate, user
     return db_transaction
 
 def update_transaction(db: Session, transaction_id: int, transaction: schemas.TransactionUpdate, user_id: int):
-    db_trans = db.query(models.Transaction).filter(models.Transaction.id == transaction_id, models.Transaction.user_id == user_id).first()
-    if db_trans:
-        update_data = transaction.dict(exclude_unset=True)
-        # Convert date string to date object if present
-        if 'date' in update_data and update_data['date']:
-            from datetime import datetime
-            if isinstance(update_data['date'], str):
-                try:
-                    update_data['date'] = datetime.strptime(update_data['date'], '%Y-%m-%d').date()
-                except ValueError:
-                    pass # Keep as is if format is wrong (SQLAlchemy might handle or fail)
+    # Buscar transação primeiro sem filtro de user_id
+    db_trans = db.query(models.Transaction).filter(models.Transaction.id == transaction_id).first()
+    if not db_trans:
+        return None
+    
+    # Verificar permissão: dono da transação OU pai do dono
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if db_trans.user_id != user_id:
+        # Se não for o dono, verificar se o dono é dependente deste usuário
+        owner = db.query(models.User).filter(models.User.id == db_trans.user_id).first()
+        if not (owner and owner.parent_id == user_id):
+             # Ou se for um subadmin gerenciando transação da mesma família
+            if not (user and user.role == "subadmin" and owner and owner.parent_id == user.parent_id):
+                return None # Sem permissão
 
-        for key, value in update_data.items():
-            setattr(db_trans, key, value)
-        db.commit()
-        db.refresh(db_trans)
+    update_data = transaction.dict(exclude_unset=True)
+    # Convert date string to date object if present
+    if 'date' in update_data and update_data['date']:
+        from datetime import datetime
+        if isinstance(update_data['date'], str):
+            try:
+                # Tentar vários formatos comuns se necessário, mas o padrão HTML é YYYY-MM-DD
+                update_data['date'] = datetime.strptime(update_data['date'], '%Y-%m-%d').date()
+            except ValueError:
+                pass 
+
+    for key, value in update_data.items():
+        setattr(db_trans, key, value)
+    db.commit()
+    db.refresh(db_trans)
     return db_trans
 
 def delete_transaction(db: Session, transaction_id: int, user_id: int):
-    val = db.query(models.Transaction).filter(models.Transaction.id == transaction_id, models.Transaction.user_id == user_id).first()
-    if val:
-        db.delete(val)
-        db.commit()
-    return val
+    db_trans = db.query(models.Transaction).filter(models.Transaction.id == transaction_id).first()
+    if not db_trans:
+        return None
+
+    # Verificar permissão: dono da transação OU pai do dono
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if db_trans.user_id != user_id:
+        owner = db.query(models.User).filter(models.User.id == db_trans.user_id).first()
+        if not (owner and owner.parent_id == user_id):
+            if not (user and user.role == "subadmin" and owner and owner.parent_id == user.parent_id):
+                return None
+
+    db.delete(db_trans)
+    db.commit()
+    return db_trans
 
 # Budgets
 def get_budgets(db: Session, user_id: int):

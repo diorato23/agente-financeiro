@@ -27,7 +27,10 @@ class TransactionUpdate(BaseModel):
     amount: Optional[float] = None
     type: Optional[str] = None
     category: Optional[str] = None
-    date: Optional[date] = None
+    date: Optional[str] = None
+    is_recurring: Optional[bool] = None
+    recurrence_day: Optional[int] = None
+    recurrence_active: Optional[bool] = None
 
 class Transaction(TransactionBase):
     id: int
