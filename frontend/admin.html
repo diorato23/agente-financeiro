@@ -973,6 +973,18 @@
 
     <script>
         const API_URL = '';
+
+        // Sistema de Temas
+        function applyTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'system';
+            let themeToApply = savedTheme;
+            if (savedTheme === 'system') {
+                themeToApply = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-theme', themeToApply);
+        }
+        applyTheme();
+
         let users = [];
         let filteredUsers = [];
         let editingUserId = null;

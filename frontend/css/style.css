@@ -1736,6 +1736,104 @@ tr:last-child td {
     color: var(--primary);
 }
 
+/* [data-theme="dark"] — Deep & Premium Dark Mode */
+[data-theme="dark"] {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --primary-light: #a5b4fc;
+    --primary-bg: rgba(99, 102, 241, 0.15);
+    --primary-glow: rgba(99, 102, 241, 0.4);
+
+    --bg-app: #0f172a;
+    /* Slate 900 - Deep & Modern */
+    --bg-card: #1e293b;
+    /* Slate 800 - Clean Card Contrast */
+    --bg-glass: rgba(15, 23, 42, 0.85);
+
+    --text-main: #f8fafc;
+    --text-body: #e2e8f0;
+    --text-muted: #94a3b8;
+    --text-light: #64748b;
+
+    --border: rgba(255, 255, 255, 0.1);
+    --border-light: rgba(255, 255, 255, 0.05);
+
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* Redesenho do Modal de Categorias & Inputs */
+#categoryModal .modal-content {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem !important;
+}
+
+#categoryList {
+    list-style: none;
+    margin: 1.5rem 0;
+    max-height: 250px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-right: 5px;
+}
+
+#categoryList li {
+    background: var(--bg-app);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.85rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: var(--transition-base);
+}
+
+#categoryList li:hover {
+    border-color: var(--primary-light);
+    transform: translateX(3px);
+}
+
+.new-cat-container {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    background: var(--primary-bg);
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+}
+
+.new-cat-container input {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 0.75rem 1rem !important;
+    flex: 1;
+    color: var(--text-main);
+}
+
+.btn-add-cat {
+    background: var(--primary);
+    color: white;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-slow);
+}
+
+.btn-add-cat:hover {
+    transform: rotate(90deg) scale(1.1);
+}
+
 /* Transição suave ao mudar tema */
 html,
 body,

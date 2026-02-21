@@ -504,21 +504,16 @@
                 </button>
             </div>
             <ul id="categoryList"></ul>
-            <p id="noCategoriesMsg" style="text-align: center; color: var(--text-muted); display: none; padding: 1rem;">
+            <p id="noCategoriesMsg"
+                style="text-align: center; color: var(--text-muted); display: none; padding: 1.5rem; font-size: 0.9rem;">
                 No hay categorías personalizadas.
             </p>
-            <form id="categoryForm"
-                style="border-top: 1px solid var(--border-light); padding-top: 1rem; margin-top: 0.5rem;">
-                <label
-                    style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
-                    Nueva Categoría
-                </label>
-                <div style="display: flex; gap: 0.5rem;">
-                    <input type="text" id="newCategoryName" required placeholder="Ej: Viajes" style="flex: 1;">
-                    <button type="submit" class="btn-primary" style="padding: 0 1rem;">
-                        <i data-lucide="plus" style="width:16px;height:16px;"></i>
-                    </button>
-                </div>
+            <form id="categoryForm" class="new-cat-container">
+                <input type="text" id="newCategoryName" required placeholder="Nombre de categoría..."
+                    aria-label="Nueva Categoría">
+                <button type="submit" class="btn-add-cat" title="Añadir Categoría">
+                    <i data-lucide="plus"></i>
+                </button>
             </form>
         </div>
     </div>

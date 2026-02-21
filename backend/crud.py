@@ -156,8 +156,12 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     """Obtener lista de usuarios"""
     return db.query(models.User).offset(skip).limit(limit).all()
 
-def create_user(db: Session, user: schemas.UserCreate, password_hash: str):
-    """Crear usuario"""
+    # Validar se o novo usuário será Admin (apenas um permitido no sistema)
+    if user.role == "admin":
+        admin_count = db.query(models.User).filter(models.User.role == "admin").count()
+        if admin_count > 0:
+            raise ValueError("Ya existe un administrador en el sistema. Solo se permite uno.")
+
     # Se for dependente, verificar limite
     if user.parent_id:
         parent = db.query(models.User).filter(models.User.id == user.parent_id).first()
@@ -180,7 +184,7 @@ def create_user(db: Session, user: schemas.UserCreate, password_hash: str):
         full_name=user.full_name,
         phone=user.phone,
         birth_date=user.birth_date,
-        currency=user.currency
+        currency=user.currency or "COP"
     )
     db.add(db_user)
     db.commit()
@@ -192,6 +196,13 @@ def update_user(db: Session, user_id: int, user_update: schemas.UserUpdate, pass
     db_user = db.query(models.User).filter(models.User.id == user_id).first()
     if db_user:
         update_data = user_update.dict(exclude_unset=True)
+        
+        # Restrição de Admin Único na atualização
+        if 'role' in update_data and update_data['role'] == "admin" and db_user.role != "admin":
+            admin_count = db.query(models.User).filter(models.User.role == "admin").count()
+            if admin_count > 0:
+                raise ValueError("Ya existe un administrador. No se puede promover otro usuario.")
+
         if password_hash:
             db_user.password_hash = password_hash
         
