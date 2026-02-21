@@ -301,13 +301,6 @@ def create_transaction(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
-    # Verifica assinatura (considera o pai caso seja dependente)
-    effective_user = current_user
-    if current_user.parent_id:
-        effective_user = db.query(models.User).filter(models.User.id == current_user.parent_id).first()
-    
-    if not (effective_user and effective_user.is_subscriber):
-        raise HTTPException(status_code=403, detail="Falta suscripción activa para registrar transacciones.")
     return crud.create_transaction(db=db, transaction=transaction, user_id=current_user.id)
 
 @router.get("/transactions/", response_model=List[schemas.Transaction])
@@ -476,14 +469,6 @@ def create_budget(
 ):
     if current_user.parent_id and current_user.role == "user":
         raise HTTPException(status_code=403, detail="Dependentes não podem criar orçamentos")
-
-    # Verifica assinatura (considera o pai caso seja dependente)
-    effective_user = current_user
-    if current_user.parent_id:
-        effective_user = db.query(models.User).filter(models.User.id == current_user.parent_id).first()
-
-    if not (effective_user and effective_user.is_subscriber):
-        raise HTTPException(status_code=403, detail="Falta suscripción activa para registrar presupuestos.")
 
     current_budgets = crud.get_budgets(db, user_id=current_user.id)
     for b in current_budgets:
