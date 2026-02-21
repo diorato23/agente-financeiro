@@ -4,363 +4,648 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceso - Finanzas</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Finanzas — Acceso</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
             --primary: #4f46e5;
             --primary-dark: #4338ca;
-            --text-main: #1f2937;
+            --primary-light: #818cf8;
+            --primary-bg: #eef2ff;
+            --text-main: #1e1b4b;
             --text-muted: #6b7280;
+            --text-light: #9ca3af;
+            --success: #10b981;
+            --danger: #ef4444;
+            --border: #e5e7eb;
         }
 
-        * {
+        *,
+        *::before,
+        *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Outfit', sans-serif;
         }
 
         body {
-            min-height: 100vh;
-            /* Changed from height: 100vh to allow scrolling */
-            background-color: #f3f4f6;
-            position: relative;
+            font-family: 'Outfit', system-ui, sans-serif;
+            min-height: 100dvh;
+            background: #0f0e23;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 1.25rem;
             overflow-y: auto;
-            /* Allow scroll for mobile keyboard */
-            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
         }
 
-        /* Blue Wave Background */
-        .wave-bg {
+        /* ===== ANIMATED BACKGROUND ===== */
+        .bg-scene {
             position: fixed;
-            /* Fixed so it doesn't scroll away */
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+            inset: 0;
+            overflow: hidden;
+            z-index: 0;
         }
 
-        .wave-shape {
-            position: fixed;
-            top: 0;
-            right: 0;
-            width: 80%;
-            height: 80%;
-            background: radial-gradient(circle at 70% 30%, #4338ca 0%, #4f46e5 100%);
-            border-radius: 0 0 0 100%;
-            opacity: 0.1;
-            filter: blur(60px);
-            z-index: -1;
+        /* Gradient blobs */
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: float 8s ease-in-out infinite;
         }
 
+        .blob-1 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, #4f46e5 0%, #4338ca 100%);
+            top: -150px;
+            left: -150px;
+            animation-duration: 9s;
+        }
+
+        .blob-2 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, #818cf8 0%, #6366f1 100%);
+            bottom: -100px;
+            right: -100px;
+            animation-delay: -4s;
+            animation-duration: 11s;
+        }
+
+        .blob-3 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, #a5b4fc 0%, #4f46e5 100%);
+            top: 40%;
+            left: 60%;
+            opacity: 0.3;
+            animation-delay: -2s;
+            animation-duration: 13s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(20px, -30px) scale(1.04);
+            }
+
+            66% {
+                transform: translate(-15px, 20px) scale(0.97);
+            }
+        }
+
+        /* Noise texture overlay */
+        .bg-scene::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        /* ===== CARD ===== */
         .login-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 2.5rem;
-            border-radius: 30px;
-            box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.15);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.8);
             position: relative;
             z-index: 10;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 28px;
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow:
+                0 25px 50px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            animation: cardIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        .header h1 {
-            font-size: 1.8rem;
-            color: var(--primary);
-            margin-bottom: 0.5rem;
-            font-weight: 700;
+        @keyframes cardIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
-        .header p {
-            color: var(--text-muted);
+        /* Brand */
+        .brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem;
             margin-bottom: 2rem;
-            font-size: 1rem;
         }
 
+        .brand-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(79, 70, 229, 0.5);
+        }
+
+        .brand-icon svg {
+            width: 22px;
+            height: 22px;
+            color: white;
+        }
+
+        .brand-name {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -0.5px;
+        }
+
+        /* Tabs */
+        .auth-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.07);
+            border-radius: 14px;
+            padding: 4px;
+            margin-bottom: 1.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            padding: 0.6rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .tab-btn.active {
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Error Banner */
+        #error-message {
+            display: none;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.25rem;
+            font-size: 0.88rem;
+            text-align: center;
+            backdrop-filter: blur(8px);
+        }
+
+        /* Input Groups */
         .input-group {
-            margin-bottom: 1.2rem;
-            text-align: left;
+            margin-bottom: 1rem;
         }
 
         .input-group label {
             display: block;
             margin-bottom: 0.4rem;
-            font-size: 0.9rem;
+            font-size: 0.82rem;
             font-weight: 600;
-            color: var(--text-main);
-            margin-left: 0.5rem;
+            color: rgba(255, 255, 255, 0.65);
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
         }
 
-        .input-group input {
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            width: 18px;
+            height: 18px;
+            color: rgba(255, 255, 255, 0.35);
+            pointer-events: none;
+            transition: color 0.2s;
+        }
+
+        .input-wrapper input,
+        .input-wrapper select {
             width: 100%;
-            padding: 0.9rem 1.2rem;
+            padding: 0.8rem 1rem 0.8rem 2.75rem;
             border-radius: 12px;
-            border: 2px solid #f3f4f6;
-            background: #f9fafb;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            color: var(--text-main);
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: var(--primary);
-            background: white;
-            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.1);
-        }
-
-        .btn-login {
-            width: 100%;
-            padding: 1rem;
-            background: var(--primary);
+            border: 1.5px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.07);
             color: white;
-            border: none;
-            border-radius: 15px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 1rem;
-            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+            font-size: 0.95rem;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.2s;
+            -webkit-appearance: none;
         }
 
-        .btn-login:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 20px 25px -5px rgba(79, 70, 229, 0.4);
+        .input-wrapper input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
         }
 
-        .toggle-text {
-            margin-top: 1.5rem;
-            font-size: 0.9rem;
-            color: var(--text-muted);
+        .input-wrapper input:focus,
+        .input-wrapper select:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
         }
 
-        .toggle-text span {
-            color: var(--primary);
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: underline;
+        .input-wrapper input:focus~.input-icon,
+        .input-wrapper select:focus~.input-icon {
+            color: var(--primary-light);
         }
 
-        .circle {
-            position: fixed;
-            border-radius: 50%;
-            z-index: -1;
+        /* Select options dark */
+        .input-wrapper select option {
+            background: #1e1b4b;
+            color: white;
         }
 
-        .c1 {
-            width: 200px;
-            height: 200px;
-            background: #6366f1;
-            top: -50px;
-            left: -50px;
-            opacity: 0.1;
+        /* No icon inputs */
+        .input-wrapper.no-icon input,
+        .input-wrapper.no-icon select {
+            padding-left: 1rem;
         }
 
-        .c2 {
-            width: 100px;
-            height: 100px;
-            background: #818cf8;
-            bottom: 50px;
-            right: -20px;
-            opacity: 0.15;
-        }
-
-        /* Password Strength */
+        /* Password strength */
         .pwd-req {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-top: 0.3rem;
-            margin-left: 0.5rem;
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.45);
+            margin-top: 0.4rem;
+            margin-left: 0.25rem;
             list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .pwd-req li {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
         }
 
         .pwd-req li.valid {
-            color: #10b981;
+            color: var(--success);
         }
 
         .pwd-req li.invalid {
-            color: #ef4444;
+            color: rgba(255, 255, 255, 0.35);
         }
 
+        /* Submit Button */
+        .btn-login {
+            width: 100%;
+            padding: 0.95rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 100px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            margin-top: 1.25rem;
+            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.5);
+            position: relative;
+            overflow: hidden;
+            font-family: 'Outfit', sans-serif;
+            letter-spacing: 0.2px;
+        }
+
+        .btn-login::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+            transition: left 0.55s ease;
+        }
+
+        .btn-login:hover::after {
+            left: 150%;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(79, 70, 229, 0.6);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Footer text */
+        .auth-footer {
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+        }
+
+        .auth-footer a {
+            color: var(--primary-light);
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .auth-footer a:hover {
+            color: white;
+        }
+
+        .version {
+            margin-top: 2rem;
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        /* Hidden */
         .hidden {
             display: none !important;
+        }
+
+        /* ===== FORM SLIDE ANIMATION ===== */
+        .form-section {
+            animation: fadeSlide 0.3s ease;
+        }
+
+        @keyframes fadeSlide {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== MOBILE ===== */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 2rem 1.5rem;
+                border-radius: 24px;
+                padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="wave-bg"></div>
-    <div class="wave-shape"></div>
-    <div class="circle c1"></div>
-    <div class="circle c2"></div>
+    <!-- Animated Background -->
+    <div class="bg-scene">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
 
     <div class="login-card">
-        <div class="header" id="headerText">
-            <h1>¡Bienvenido!</h1>
-            <p>Ingresa para administrar tus finanzas</p>
-        </div>
-
-        <div id="error-message"
-            style="display: none; background-color: #fee2e2; color: #b91c1c; padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 1rem; font-size: 0.9rem; text-align: center;">
-        </div>
-
-        <form id="loginForm">
-            <div class="input-group">
-                <label>Usuario</label>
-                <input type="text" id="username" required placeholder="Ej: juan123">
+        <!-- Brand -->
+        <div class="brand">
+            <div class="brand-icon">
+                <i data-lucide="wallet"></i>
             </div>
+            <span class="brand-name">Finanzas</span>
+        </div>
 
-            <!-- Campos extras para registro -->
-            <div id="regFields" class="hidden">
+        <!-- Tabs -->
+        <div class="auth-tabs">
+            <button class="tab-btn active" id="tabLogin" onclick="setMode(true)">Ingresar</button>
+            <button class="tab-btn" id="tabRegister" onclick="setMode(false)">Crear Cuenta</button>
+        </div>
+
+        <!-- Error Banner -->
+        <div id="error-message"></div>
+
+        <!-- Form -->
+        <form id="loginForm">
+            <!-- === LOGIN FIELDS === -->
+            <div id="loginSection" class="form-section">
                 <div class="input-group">
-                    <label>Nombre Completo</label>
-                    <input type="text" id="fullName" placeholder="Ej: Juan Perez">
+                    <label>Usuario</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="user" class="input-icon"></i>
+                        <input type="text" id="username" required placeholder="Ej: juan123" autocomplete="username">
+                    </div>
                 </div>
                 <div class="input-group">
-                    <label>Teléfono</label>
-                    <input type="tel" id="phone" placeholder="+57 300...">
+                    <label>Contraseña</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="lock" class="input-icon"></i>
+                        <input type="password" id="password" required placeholder="••••••••"
+                            autocomplete="current-password">
+                    </div>
+                </div>
+            </div>
+
+            <!-- === REGISTER FIELDS === -->
+            <div id="registerSection" class="hidden form-section">
+                <div class="input-group">
+                    <label>Usuario</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="user" class="input-icon"></i>
+                        <input type="text" id="r-username" placeholder="Ej: juan123" autocomplete="username">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Nombre Completo</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="badge-check" class="input-icon"></i>
+                        <input type="text" id="fullName" placeholder="Juan Pérez">
+                    </div>
                 </div>
                 <div class="input-group">
                     <label>Email</label>
-                    <input type="email" id="email" placeholder="correo@ejemplo.com">
+                    <div class="input-wrapper">
+                        <i data-lucide="mail" class="input-icon"></i>
+                        <input type="email" id="email" placeholder="correo@ejemplo.com">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Teléfono</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="phone" class="input-icon"></i>
+                        <input type="tel" id="phone" placeholder="+57 300...">
+                    </div>
                 </div>
                 <div class="input-group">
                     <label>Fecha de Nacimiento</label>
-                    <input type="date" id="birthDate">
+                    <div class="input-wrapper no-icon">
+                        <input type="date" id="birthDate" style="padding-left:1rem;">
+                    </div>
                 </div>
                 <div class="input-group">
                     <label>Moneda</label>
-                    <select id="currency"
-                        style="width: 100%; padding: 0.9rem; border-radius: 12px; border: 2px solid #f3f4f6; background: #f9fafb;">
-                        <option value="COP">COP (Peso Colombiano)</option>
-                        <option value="USD">USD (Dólar)</option>
-                        <option value="BRL">BRL (Real)</option>
-                    </select>
+                    <div class="input-wrapper no-icon">
+                        <select id="currency" style="padding-left:1rem;">
+                            <option value="COP">COP — Peso Colombiano</option>
+                            <option value="USD">USD — Dólar</option>
+                            <option value="BRL">BRL — Real Brasileño</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="input-group">
                     <label>Perfil</label>
-                    <select id="role"
-                        style="width: 100%; padding: 0.9rem; border-radius: 12px; border: 2px solid #f3f4f6; background: #f9fafb;">
-                        <option value="admin">Administrador (Padre)</option>
-                        <option value="subadmin">Sub-administrador (Madre)</option>
-                    </select>
+                    <div class="input-wrapper no-icon">
+                        <select id="role" style="padding-left:1rem;">
+                            <option value="admin">Administrador (Padre/Madre)</option>
+                            <option value="subadmin">Sub-admin (Pareja)</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
-
-            <div class="input-group">
-                <label>Contraseña</label>
-                <input type="password" id="password" required placeholder="••••••••">
-                <ul id="pwdReqs" class="pwd-req hidden">
-                    <li id="reqLen" class="invalid">○ Mínimo 8 caracteres</li>
-                    <li id="reqUpper" class="invalid">○ Letra mayúscula</li>
-                    <li id="reqNum" class="invalid">○ Al menos um número</li>
-                    <li id="reqSpec" class="invalid">○ Carácter especial (!@#$)</li>
-                </ul>
+                <div class="input-group">
+                    <label>Contraseña</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="lock" class="input-icon"></i>
+                        <input type="password" id="r-password" placeholder="Mín. 8 caracteres"
+                            autocomplete="new-password">
+                    </div>
+                    <ul id="pwdReqs" class="pwd-req hidden">
+                        <li id="reqLen" class="invalid"><i data-lucide="circle" style="width:10px;height:10px;"></i>
+                            Mínimo 8 caracteres</li>
+                        <li id="reqUpper" class="invalid"><i data-lucide="circle" style="width:10px;height:10px;"></i>
+                            Letra mayúscula</li>
+                        <li id="reqNum" class="invalid"><i data-lucide="circle" style="width:10px;height:10px;"></i> Al
+                            menos un número</li>
+                        <li id="reqSpec" class="invalid"><i data-lucide="circle" style="width:10px;height:10px;"></i>
+                            Carácter especial (!@#$)</li>
+                    </ul>
+                </div>
             </div>
 
             <button type="submit" class="btn-login" id="submitBtn">Ingresar</button>
         </form>
 
-        <p class="toggle-text" id="toggleText">
-            ¿No tienes cuenta? <span onclick="toggleMode()">Crear Cuenta</span>
+        <p class="auth-footer">
+            <span id="toggleHint">¿No tienes cuenta?</span>
+            <a id="toggleLink" onclick="setMode(false)"> Crear Cuenta</a>
         </p>
-        <p style="margin-top: 2rem; font-size: 0.7rem; color: #9ca3af; text-align: center;">v2.6 (Mobile Fix)</p>
+
+        <p class="version">Finanzas v3.0 · UX Redesign</p>
     </div>
 
     <script>
-        // Detect API URL dynamically
+        // Init Lucide Icons
+        lucide.createIcons();
+
         const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'http://127.0.0.1:8000'
-            : ''; // In production, same domain
+            ? 'http://127.0.0.1:8000' : '';
+
         let isLoginMode = true;
 
-        function toggleMode() {
-            isLoginMode = !isLoginMode;
-            const headerH1 = document.querySelector('#headerText h1');
-            const headerP = document.querySelector('#headerText p');
-            const btn = document.getElementById('submitBtn');
-            const toggle = document.getElementById('toggleText');
-            const errorDiv = document.getElementById('error-message');
-            const regFields = document.getElementById('regFields');
-            const pwdReqs = document.getElementById('pwdReqs');
+        function setMode(loginMode) {
+            isLoginMode = loginMode;
 
-            if (errorDiv) errorDiv.style.display = 'none';
+            // Tabs
+            document.getElementById('tabLogin').classList.toggle('active', loginMode);
+            document.getElementById('tabRegister').classList.toggle('active', !loginMode);
 
-            if (isLoginMode) {
-                headerH1.innerText = '¡Bienvenido!';
-                headerP.innerText = 'Ingresa para administrar tus finanzas';
-                btn.innerText = 'Ingresar';
-                toggle.innerHTML = '¿No tienes cuenta? <span onclick="toggleMode()">Crear Cuenta</span>';
-                regFields.classList.add('hidden');
-                pwdReqs.classList.add('hidden');
-                document.getElementById('fullName').required = false;
-            } else {
-                headerH1.innerText = 'Crear Cuenta';
-                headerP.innerText = 'Configura tu perfil para empezar';
-                btn.innerText = 'Registrarse';
-                toggle.innerHTML = '¿Ya tienes cuenta? <span onclick="toggleMode()">Ingresar</span>';
-                regFields.classList.remove('hidden');
-                pwdReqs.classList.remove('hidden');
-                document.getElementById('fullName').required = true;
-            }
+            // Sections
+            document.getElementById('loginSection').classList.toggle('hidden', !loginMode);
+            document.getElementById('registerSection').classList.toggle('hidden', loginMode);
+
+            // Animate
+            const visibleSection = loginMode
+                ? document.getElementById('loginSection')
+                : document.getElementById('registerSection');
+            visibleSection.classList.remove('form-section');
+            void visibleSection.offsetWidth; // trigger reflow
+            visibleSection.classList.add('form-section');
+
+            // Button & hints
+            document.getElementById('submitBtn').textContent = loginMode ? 'Ingresar' : 'Crear Cuenta';
+            document.getElementById('toggleHint').textContent = loginMode ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?';
+            document.getElementById('toggleLink').textContent = loginMode ? ' Crear Cuenta' : ' Ingresar';
+            document.getElementById('toggleLink').onclick = () => setMode(!loginMode);
+
+            // Password requirements
+            document.getElementById('pwdReqs').classList.toggle('hidden', loginMode);
+
+            // Clear errors
+            document.getElementById('error-message').style.display = 'none';
+
+            // Scroll to top
+            window.scrollTo(0, 0);
         }
 
-        // Strong Password Validation
-        document.getElementById('password').addEventListener('input', function (e) {
+        // Password validation on register
+        document.getElementById('r-password').addEventListener('input', function (e) {
             if (isLoginMode) return;
             const pwd = e.target.value;
-
             const checks = {
                 len: pwd.length >= 8,
                 upper: /[A-Z]/.test(pwd),
                 num: /[0-9]/.test(pwd),
                 spec: /[^A-Za-z0-9]/.test(pwd)
             };
-
             document.getElementById('reqLen').className = checks.len ? 'valid' : 'invalid';
             document.getElementById('reqUpper').className = checks.upper ? 'valid' : 'invalid';
             document.getElementById('reqNum').className = checks.num ? 'valid' : 'invalid';
             document.getElementById('reqSpec').className = checks.spec ? 'valid' : 'invalid';
-
-            const allValid = Object.values(checks).every(Boolean);
-            document.getElementById('submitBtn').disabled = !allValid && !isLoginMode;
-            document.getElementById('submitBtn').style.opacity = allValid ? '1' : '0.5';
+            document.getElementById('pwdReqs').classList.remove('hidden');
+            lucide.createIcons();
         });
 
         function showError(msg) {
             const el = document.getElementById('error-message');
-            if (el) {
-                el.innerText = msg;
-                el.style.display = 'block';
-            } else {
-                alert(msg);
-            }
+            el.textContent = msg;
+            el.style.display = 'block';
         }
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
             const btn = document.getElementById('submitBtn');
-            const errorDiv = document.getElementById('error-message');
-
-            if (errorDiv) errorDiv.style.display = 'none';
-            btn.innerHTML = isLoginMode ? 'Ingresando...' : 'Creando...';
-            btn.style.opacity = '0.8';
+            document.getElementById('error-message').style.display = 'none';
+            btn.textContent = isLoginMode ? 'Ingresando...' : 'Creando cuenta...';
+            btn.disabled = true;
 
             try {
                 if (isLoginMode) {
+                    const username = document.getElementById('username').value;
+                    const password = document.getElementById('password').value;
+
                     const res = await fetch(`${API_URL}/auth/login`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -380,6 +665,9 @@
                     window.location.href = 'index.html';
 
                 } else {
+                    const username = document.getElementById('r-username').value;
+                    const password = document.getElementById('r-password').value;
+
                     const res = await fetch(`${API_URL}/auth/register`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -397,11 +685,11 @@
 
                     if (!res.ok) {
                         let errData = {};
-                        try { errData = await res.json(); } catch (e) { }
+                        try { errData = await res.json(); } catch (_) { }
                         throw new Error(errData.detail || 'Error al crear usuario');
                     }
 
-                    // Auto-login
+                    // Auto-login após registro
                     const loginRes = await fetch(`${API_URL}/auth/login`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -419,8 +707,8 @@
             } catch (error) {
                 console.error('Error:', error);
                 showError(error.message);
-                btn.innerHTML = isLoginMode ? 'Ingresar' : 'Registrarse';
-                btn.style.opacity = '1';
+                btn.textContent = isLoginMode ? 'Ingresar' : 'Crear Cuenta';
+                btn.disabled = false;
             }
         });
     </script>

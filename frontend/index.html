@@ -4,8 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4f46e5">
     <title>Finanzas Simplificadas</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="css/style.css">
@@ -14,312 +16,376 @@
 <body>
     <div id="toast-container" class="toast-container"></div>
     <div class="app-container">
+
         <!-- Overlay -->
         <div class="menu-overlay" id="menuOverlay" onclick="toggleSidebar()"></div>
 
-        <!-- Sidebar -->
+        <!-- ===== SIDEBAR ===== -->
         <aside class="sidebar" id="sidebar">
             <div class="logo">
                 <i data-lucide="wallet"></i>
                 <span>Finanzas</span>
             </div>
+
             <nav>
-                <a href="#" class="active" onclick="switchTab('dashboard')"><i data-lucide="layout-dashboard"></i>
-                    Dashboard</a>
-                <a href="#" onclick="switchTab('transactions')"><i data-lucide="list"></i> Transacciones</a>
-                <a href="#" onclick="switchTab('reports')"><i data-lucide="bar-chart-2"></i> Informes</a>
-                <a href="#" onclick="switchTab('budgets')"><i data-lucide="pie-chart"></i> Presupuestos</a>
-                <a href="#" onclick="switchTab('dependents')" id="navDependents" style="display: none;"><i
-                        data-lucide="users"></i> Dependentes</a>
-                <a href="#" onclick="openCategoryModal()"><i data-lucide="tag"></i> Categorías</a>
-                <a href="admin.html" id="adminLink" style="display: none;"><i data-lucide="users"></i> Usuarios</a>
+                <a href="#" class="active" id="nav-dashboard" onclick="switchTab('dashboard')">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" id="nav-transactions" onclick="switchTab('transactions')">
+                    <i data-lucide="list"></i>
+                    <span>Transacciones</span>
+                </a>
+                <a href="#" id="nav-reports" onclick="switchTab('reports')">
+                    <i data-lucide="bar-chart-2"></i>
+                    <span>Informes</span>
+                </a>
+                <a href="#" id="nav-budgets" onclick="switchTab('budgets')">
+                    <i data-lucide="pie-chart"></i>
+                    <span>Presupuestos</span>
+                </a>
+                <a href="#" id="navDependents" style="display: none;" onclick="switchTab('dependents')">
+                    <i data-lucide="users"></i>
+                    <span>Dependentes</span>
+                </a>
+                <a href="#" onclick="openCategoryModal()">
+                    <i data-lucide="tag"></i>
+                    <span>Categorías</span>
+                </a>
+                <a href="admin.html" id="adminLink" style="display: none;">
+                    <i data-lucide="shield"></i>
+                    <span>Usuarios</span>
+                </a>
             </nav>
-            <div style="margin-top: auto; padding: 1rem;">
-                <button class="btn-secondary" onclick="logout()" style="width: 100%;">
-                    <i data-lucide="log-out" style="width: 18px;"></i> Cerrar Sesión
+
+            <!-- Sidebar Footer -->
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="user-avatar" id="sidebarAvatarInitials">?</div>
+                    <div class="sidebar-user-info">
+                        <div class="sidebar-user-name" id="sidebarUserName">Usuario</div>
+                        <div class="sidebar-user-role" id="sidebarUserRole">—</div>
+                    </div>
+                </div>
+                <button class="btn-secondary" onclick="logout()" style="width: 100%; justify-content: center;">
+                    <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
+                    <span>Cerrar Sesión</span>
                 </button>
             </div>
         </aside>
 
-        <!-- Main Content -->
+        <!-- ===== MAIN CONTENT ===== -->
         <main class="main-content">
+            <!-- Header -->
             <header>
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <button id="menuToggle" onclick="toggleSidebar()" style="display: none;">
+                <div style="display: flex; align-items: center; gap: 0.85rem;">
+                    <button id="menuToggle" onclick="toggleSidebar()" style="display: none;" aria-label="Abrir menú">
                         <i data-lucide="menu"></i>
                     </button>
-                    <h1 id="userNameDisplay" onclick="openProfileModal()"
-                        style="cursor: pointer; text-decoration: underline; text-decoration-style: dotted;">Hola,
-                        Usuario
+                    <h1 id="userNameDisplay" onclick="openProfileModal()" style="cursor: pointer;"
+                        title="Editar perfil">
+                        Hola, Usuario
                     </h1>
                 </div>
-                <button class="btn-primary" onclick="openTransactionModal()">
-                    <i data-lucide="plus"></i> <span class="btn-text">Nueva Transacción</span>
+                <button class="btn-primary" onclick="openTransactionModal()" id="headerAddBtn">
+                    <i data-lucide="plus"></i>
+                    <span class="btn-text">Nueva Transacción</span>
                 </button>
             </header>
 
-            <!-- Dashboard View -->
-            <div id="dashboard" class="view active">
-                <div class="summary-cards">
-                    <div class="card">
-                        <h3>Saldo Total</h3>
-                        <p class="amount" id="balanceDisplay">$0 COP</p>
+            <!-- ===== SCROLLABLE AREA ===== -->
+            <div class="main-scroll">
+
+                <!-- Dashboard View -->
+                <div id="dashboard" class="view active">
+                    <!-- Summary Cards -->
+                    <div class="summary-cards">
+                        <div class="card">
+                            <div class="card-icon balance">
+                                <i data-lucide="wallet"></i>
+                            </div>
+                            <h3>Saldo Total</h3>
+                            <p class="amount" id="balanceDisplay">$0 COP</p>
+                            <p class="card-trend" id="balanceTrend"></p>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon income">
+                                <i data-lucide="trending-up"></i>
+                            </div>
+                            <h3>Ingresos</h3>
+                            <p class="amount income" id="incomeDisplay">$0 COP</p>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon expense">
+                                <i data-lucide="trending-down"></i>
+                            </div>
+                            <h3>Gastos</h3>
+                            <p class="amount expense" id="expenseDisplay">$0 COP</p>
+                        </div>
                     </div>
-                    <div class="card">
-                        <h3>Ingresos</h3>
-                        <p class="amount income" id="incomeDisplay">$0 COP</p>
-                    </div>
-                    <div class="card">
-                        <h3>Gastos</h3>
-                        <p class="amount expense" id="expenseDisplay">$0 COP</p>
+
+                    <!-- Charts -->
+                    <div class="charts-container">
+                        <div class="card chart-card">
+                            <div class="section-header">
+                                <h2>Gastos por Categoría</h2>
+                            </div>
+                            <div style="position: relative; height: 280px;">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="section-header">
+                                <h2>Alertas de Presupuesto</h2>
+                            </div>
+                            <div id="budgetAlerts" class="budget-list"></div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="charts-container">
-                    <div class="card chart-card">
-                        <h3>Gastos por Categoría</h3>
-                        <div style="position: relative; height: 300px;">
-                            <canvas id="categoryChart"></canvas>
-                        </div>
+                <!-- Transactions View -->
+                <div id="transactions" class="view" style="display: none;">
+                    <div class="section-header" style="margin-bottom: 1.25rem;">
+                        <h2>Transacciones</h2>
                     </div>
-                    <div class="card list-card">
-                        <h3>Alertas de Presupuesto</h3>
-                        <div id="budgetAlerts" class="budget-list">
-                            <!-- Budget items injected here -->
-                        </div>
+
+                    <!-- Filters -->
+                    <div class="card" style="margin-bottom: 1.25rem;">
+                        <h3
+                            style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem;">
+                            <i data-lucide="filter" style="width: 18px; height: 18px;"></i>
+                            Filtros de Búsqueda
+                        </h3>
+                        <form id="filterForm"
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.85rem;">
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-size: 0.8rem;">Fecha Inicio</label>
+                                <input type="date" id="filterDataInicio">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-size: 0.8rem;">Fecha Fin</label>
+                                <input type="date" id="filterDataFim">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-size: 0.8rem;">Tipo</label>
+                                <select id="filterTipo">
+                                    <option value="">Todos</option>
+                                    <option value="income">Ingreso</option>
+                                    <option value="expense">Gasto</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-size: 0.8rem;">Categoría</label>
+                                <select id="filterCategoria">
+                                    <option value="">Todas</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-size: 0.8rem;">Buscar</label>
+                                <input type="text" id="filterBusca" placeholder="Descripción...">
+                            </div>
+                            <div class="form-group"
+                                style="margin: 0; display: flex; align-items: flex-end; gap: 0.5rem;">
+                                <button type="button" class="btn-primary" onclick="applyFilters()"
+                                    style="flex: 1; justify-content: center;">
+                                    <i data-lucide="search" style="width: 15px; height: 15px;"></i> Buscar
+                                </button>
+                                <button type="button" class="btn-secondary" onclick="clearFilters()" title="Limpiar">
+                                    <i data-lucide="x" style="width: 15px; height: 15px;"></i>
+                                </button>
+                            </div>
+                        </form>
+                        <div id="filterIndicators" style="margin-top: 0.75rem; display: none;"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 style="margin-bottom: 1.25rem; font-size: 0.95rem;">Historial</h3>
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th id="userTableHeader" style="display: none;">Usuario</th>
+                                    <th>Descripción</th>
+                                    <th>Categoría</th>
+                                    <th>Monto</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionList"></tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
 
-            <!-- Transactions View -->
-            <div id="transactions" class="view" style="display: none;">
-                <div class="mobile-header-nav">
-                    <button class="btn-back" onclick="switchTab('dashboard')">
-                        <i data-lucide="arrow-left"></i> Volver al Inicio
-                    </button>
-                </div>
+                <!-- Reports View -->
+                <div id="reports" class="view" style="display: none;">
+                    <div class="section-header" style="margin-bottom: 1.25rem;">
+                        <h2>Informes</h2>
+                    </div>
 
-                <!-- Filtros Avançados -->
-                <div class="card" style="margin-bottom: 1.5rem;">
-                    <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                        <i data-lucide="filter" style="width: 20px;"></i>
-                        Filtros de Búsqueda
-                    </h3>
-                    <form id="filterForm"
-                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-                        <div class="form-group" style="margin: 0;">
-                            <label style="font-size: 0.85rem;">Fecha Inicio</label>
-                            <input type="date" id="filterDataInicio" style="padding: 0.5rem;">
-                        </div>
-                        <div class="form-group" style="margin: 0;">
-                            <label style="font-size: 0.85rem;">Fecha Fin</label>
-                            <input type="date" id="filterDataFim" style="padding: 0.5rem;">
-                        </div>
-                        <div class="form-group" style="margin: 0;">
-                            <label style="font-size: 0.85rem;">Tipo</label>
-                            <select id="filterTipo" style="padding: 0.5rem;">
-                                <option value="">Todos</option>
-                                <option value="income">Ingreso</option>
-                                <option value="expense">Gasto</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="margin: 0;">
-                            <label style="font-size: 0.85rem;">Categoría</label>
-                            <select id="filterCategoria" style="padding: 0.5rem;">
-                                <option value="">Todas</option>
-                                <!-- Options injected dynamically -->
-                            </select>
-                        </div>
-                        <div class="form-group" style="margin: 0;">
-                            <label style="font-size: 0.85rem;">Buscar</label>
-                            <input type="text" id="filterBusca" placeholder="Descripción..." style="padding: 0.5rem;">
-                        </div>
-                        <div class="form-group" style="margin: 0; display: flex; align-items: flex-end; gap: 0.5rem;">
-                            <button type="button" class="btn-primary" onclick="applyFilters()" style="flex: 1;">
-                                <i data-lucide="search" style="width: 16px;"></i> Buscar
+                    <div class="card" style="margin-bottom: 1.25rem;">
+                        <h3 style="margin-bottom: 1rem; font-size: 0.95rem;">Período del Informe</h3>
+                        <div
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.85rem; align-items: end;">
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-size: 0.8rem;">Fecha Inicio</label>
+                                <input type="date" id="reportDataInicio">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-size: 0.8rem;">Fecha Fin</label>
+                                <input type="date" id="reportDataFim">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label style="font-size: 0.8rem;">Agrupar por</label>
+                                <select id="reportAgrupar">
+                                    <option value="day">Día</option>
+                                    <option value="week">Semana</option>
+                                    <option value="month" selected>Mes</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn-primary" onclick="generateReport()">
+                                <i data-lucide="file-text" style="width: 15px; height: 15px;"></i> Generar
                             </button>
-                            <button type="button" class="btn-secondary" onclick="clearFilters()">
-                                <i data-lucide="x" style="width: 16px;"></i>
+                        </div>
+                    </div>
+
+                    <div class="summary-cards" id="reportStatsCards" style="display: none;">
+                        <div class="card">
+                            <div class="card-icon income"><i data-lucide="trending-up"></i></div>
+                            <h3>Total Ingresos</h3>
+                            <p class="amount income" id="reportTotalReceitas">$0 COP</p>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon expense"><i data-lucide="trending-down"></i></div>
+                            <h3>Total Gastos</h3>
+                            <p class="amount expense" id="reportTotalDespesas">$0 COP</p>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon balance"><i data-lucide="scale"></i></div>
+                            <h3>Saldo</h3>
+                            <p class="amount" id="reportSaldo">$0 COP</p>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon" style="background: #ede9fe; color: #7c3aed;"><i
+                                    data-lucide="hash"></i></div>
+                            <h3>Transacciones</h3>
+                            <p class="amount" id="reportQuantidade" style="color: var(--primary);">0</p>
+                        </div>
+                    </div>
+
+                    <div class="card" id="reportChartCard" style="display: none; margin-top: 1.25rem;">
+                        <div class="section-header" style="margin-bottom: 1rem;">
+                            <h2>Evolución Temporal</h2>
+                            <button class="btn-secondary" onclick="exportToCSV()">
+                                <i data-lucide="download" style="width: 15px; height: 15px;"></i> CSV
                             </button>
                         </div>
-                    </form>
-                    <div id="filterIndicators" style="margin-top: 1rem; display: none;">
-                        <!-- Filter badges will be shown here -->
+                        <div style="position: relative; height: 320px;">
+                            <canvas id="reportChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="charts-container" id="reportTopCategories" style="display: none; margin-top: 1.25rem;">
+                        <div class="card">
+                            <h3 style="font-size: 0.95rem; margin-bottom: 1rem;">🔴 Top Gastos</h3>
+                            <div id="topCategoriasDespesas"></div>
+                        </div>
+                        <div class="card">
+                            <h3 style="font-size: 0.95rem; margin-bottom: 1rem;">🟢 Top Ingresos</h3>
+                            <div id="topCategoriasReceitas"></div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="card">
-                    <h3 style="margin-bottom: 1.5rem;">Historial de Transacciones</h3>
-                    <table class="transaction-table">
-                        <thead>
-                            <tr>
-                                <th>Fecha</th>
-                                <th id="userTableHeader" style="display: none;">Usuário</th>
-                                <th>Descripción</th>
-                                <th>Categoría</th>
-                                <th>Monto</th>
-                                <th>Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transactionList">
-                            <!-- Transactions injected here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Reports View -->
-            <div id="reports" class="view" style="display: none;">
-                <div class="mobile-header-nav">
-                    <button class="btn-back" onclick="switchTab('dashboard')">
-                        <i data-lucide="arrow-left"></i> Volver al Inicio
-                    </button>
-                </div>
-
-                <!-- Seletor de Período -->
-                <div class="card" style="margin-bottom: 1.5rem;">
-                    <h3 style="margin-bottom: 1rem;">Período del Informe</h3>
-                    <div
-                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
-                        <div class="form-group" style="margin: 0;">
-                            <label style="font-size: 0.85rem;">Fecha Inicio</label>
-                            <input type="date" id="reportDataInicio" style="padding: 0.5rem;">
-                        </div>
-                        <div class="form-group" style="margin: 0;">
-                            <label style="font-size: 0.85rem;">Fecha Fin</label>
-                            <input type="date" id="reportDataFim" style="padding: 0.5rem;">
-                        </div>
-                        <div class="form-group" style="margin: 0;">
-                            <label style="font-size: 0.85rem;">Agrupar por</label>
-                            <select id="reportAgrupar" style="padding: 0.5rem;">
-                                <option value="day">Día</option>
-                                <option value="week">Semana</option>
-                                <option value="month" selected>Mes</option>
-                            </select>
-                        </div>
-                        <button type="button" class="btn-primary" onclick="generateReport()">
-                            <i data-lucide="file-text" style="width: 16px;"></i> Generar Informe
+                <!-- Budgets View -->
+                <div id="budgets" class="view" style="display: none;">
+                    <div class="section-header" style="margin-bottom: 1.25rem;">
+                        <h2>Presupuestos</h2>
+                        <button class="btn-secondary" onclick="openBudgetModal()">
+                            <i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i>
+                            <span>Nuevo</span>
                         </button>
                     </div>
+                    <div class="budget-grid" id="budgetMgmtGrid"></div>
                 </div>
 
-                <!-- Cards de Estatísticas -->
-                <div class="summary-cards" id="reportStatsCards" style="display: none;">
-                    <div class="card">
-                        <h3>Total Ingresos</h3>
-                        <p class="amount income" id="reportTotalReceitas">$0 COP</p>
-                    </div>
-                    <div class="card">
-                        <h3>Total Gastos</h3>
-                        <p class="amount expense" id="reportTotalDespesas">$0 COP</p>
-                    </div>
-                    <div class="card">
-                        <h3>Saldo</h3>
-                        <p class="amount" id="reportSaldo">$0 COP</p>
-                    </div>
-                    <div class="card">
-                        <h3>Transacciones</h3>
-                        <p class="amount" id="reportQuantidade" style="color: var(--primary);">0</p>
-                    </div>
-                </div>
-
-                <!-- Gráfico de Evolução -->
-                <div class="card" id="reportChartCard" style="display: none; margin-top: 1.5rem;">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h3>Evolución Temporal</h3>
-                        <button class="btn-secondary" onclick="exportToCSV()">
-                            <i data-lucide="download" style="width: 16px;"></i> Exportar CSV
+                <!-- Dependents View -->
+                <div id="dependents" class="view" style="display: none;">
+                    <div class="section-header" style="margin-bottom: 1.25rem;">
+                        <h2>Dependentes</h2>
+                        <button class="btn-primary" onclick="generateInvite()">
+                            <i data-lucide="share-2" style="width: 16px; height: 16px;"></i>
+                            <span class="btn-text">Convite</span>
                         </button>
                     </div>
-                    <div style="position: relative; height: 350px;">
-                        <canvas id="reportChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Top Categorias -->
-                <div class="charts-container" id="reportTopCategories" style="display: none; margin-top: 1.5rem;">
                     <div class="card">
-                        <h3>Top Categorías - Gastos</h3>
-                        <div id="topCategoriasDespesas" style="margin-top: 1rem;">
-                            <!-- Injected dynamically -->
-                        </div>
-                    </div>
-                    <div class="card">
-                        <h3>Top Categorías - Ingresos</h3>
-                        <div id="topCategoriasReceitas" style="margin-top: 1rem;">
-                            <!-- Injected dynamically -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Budgets View -->
-            <div id="budgets" class="view" style="display: none;">
-                <div class="mobile-header-nav">
-                    <button class="btn-back" onclick="switchTab('dashboard')">
-                        <i data-lucide="arrow-left"></i> Volver al Inicio
-                    </button>
-                </div>
-                <header style="margin-bottom: 20px; justify-content: space-between; display: flex;">
-                    <h3>Gestión de Presupuestos</h3>
-                    <!-- 'Definir Presupuesto' button now styled as secondary/pill -->
-                    <button class="btn-secondary" onclick="openBudgetModal()">
-                        <i data-lucide="plus-circle" style="width:18px; margin-right:5px;"></i> <span
-                            class="btn-text">Nuevo / Editar
-                            Presupuesto</span>
-                    </button>
-                </header>
-                <div class="budget-grid" id="budgetMgmtGrid">
-                    <!-- Management Cards injected here -->
-                </div>
-            </div>
-
-            <!-- Dependents View -->
-            <div id="dependents" class="view" style="display: none;">
-                <div class="mobile-header-nav">
-                    <button class="btn-back" onclick="switchTab('dashboard')">
-                        <i data-lucide="arrow-left"></i> Volver al Inicio
-                    </button>
-                </div>
-                <header style="margin-bottom: 20px; justify-content: space-between; display: flex;">
-                    <h3>Gestión de Dependentes</h3>
-                    <button class="btn-primary" onclick="generateInvite()">
-                        <i data-lucide="share-2" style="width:18px; margin-right:5px;"></i> <span
-                            class="btn-text">Convite WhatsApp</span>
-                    </button>
-                </header>
-
-                <div class="card">
-                    <p style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem;">
-                        Você pode adicionar até 4 dependentes. Eles terão acesso apenas para criar transações.
-                    </p>
-                    <div id="dependentsList" class="budget-list">
-                        <!-- Dependents injected here -->
-                        <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
-                            Carregando...
+                        <p style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem;">
+                            Añade hasta 4 dependentes. Podrán crear transacciones.
+                        </p>
+                        <div id="dependentsList" class="budget-list">
+                            <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                                Cargando...
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+
+            </div><!-- /main-scroll -->
         </main>
-    </div>
 
-    <!-- Modals -->
-    <!-- Transaction Modal (Add/Edit) -->
+        <!-- ===== BOTTOM NAVIGATION (Mobile) ===== -->
+        <nav class="bottom-nav" id="bottomNav">
+            <button class="bottom-nav-item active" id="bnav-dashboard" onclick="switchTab('dashboard')"
+                title="Dashboard">
+                <i data-lucide="layout-dashboard"></i>
+                <span>Inicio</span>
+            </button>
+            <button class="bottom-nav-item" id="bnav-transactions" onclick="switchTab('transactions')"
+                title="Transacciones">
+                <i data-lucide="list"></i>
+                <span>Movimientos</span>
+            </button>
+            <!-- FAB -->
+            <button class="bottom-nav-fab" onclick="openTransactionModal()" title="Nueva Transacción"
+                aria-label="Nueva Transacción">
+                <i data-lucide="plus"></i>
+            </button>
+            <button class="bottom-nav-item" id="bnav-reports" onclick="switchTab('reports')" title="Informes">
+                <i data-lucide="bar-chart-2"></i>
+                <span>Informes</span>
+            </button>
+            <button class="bottom-nav-item" id="bnav-budgets" onclick="switchTab('budgets')" title="Presupuestos">
+                <i data-lucide="pie-chart"></i>
+                <span>Budgets</span>
+            </button>
+        </nav>
+
+    </div><!-- /app-container -->
+
+    <!-- ===== MODALS ===== -->
+
+    <!-- Transaction Modal -->
     <div id="transactionModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('transactionModal')"
-                style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
-            <h2 id="transModalTitle" style="margin-bottom: 1.5rem;">Nueva Transacción</h2>
+            <div class="modal-header">
+                <h2 id="transModalTitle">Nueva Transacción</h2>
+                <button class="modal-close" onclick="closeModal('transactionModal')" aria-label="Cerrar">
+                    <i data-lucide="x" style="width:16px;height:16px;"></i>
+                </button>
+            </div>
             <form id="transactionForm">
                 <input type="hidden" id="transId">
-                <div class="form-group">
-                    <label>Tipo</label>
-                    <select id="type" required>
-                        <option value="expense">Gasto</option>
-                        <option value="income">Ingreso</option>
-                    </select>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <select id="type" required>
+                            <option value="expense">Gasto</option>
+                            <option value="income">Ingreso</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <input type="date" id="date" required>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Monto (COP)</label>
@@ -332,23 +398,19 @@
                 <div class="form-group">
                     <label>Categoría</label>
                     <select id="category" required>
-                        <option value="" disabled selected>Seleccione una categoría</option>
-                        <!-- Options injected dynamically -->
+                        <option value="" disabled selected>Seleccione...</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>Fecha</label>
-                    <input type="date" id="date" required>
-                </div>
-                <!-- Feature #17 — Transações Recorrentes -->
-                <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.75rem;">
-                    <input type="checkbox" id="isRecurring" style="width: auto; margin: 0;"
+                <div class="form-group"
+                    style="display: flex; align-items: center; gap: 0.75rem; flex-direction: row; margin-bottom: 0.75rem;">
+                    <input type="checkbox" id="isRecurring" style="width: auto; margin: 0; cursor: pointer;"
                         onchange="document.getElementById('recurringDayGroup').style.display = this.checked ? 'block' : 'none'">
-                    <label for="isRecurring" style="margin: 0; cursor: pointer;">🔄 Transação Recorrente (repete todo mês)</label>
+                    <label for="isRecurring" style="margin: 0; cursor: pointer; font-size: 0.9rem;">🔄 Transacción
+                        Recurrente</label>
                 </div>
                 <div class="form-group" id="recurringDayGroup" style="display: none;">
-                    <label>Dia do mês para repetir (1-31)</label>
-                    <input type="number" id="recurrenceDay" min="1" max="31" placeholder="Ex: 5">
+                    <label>Día del mes (1-31)</label>
+                    <input type="number" id="recurrenceDay" min="1" max="31" placeholder="Ej: 5">
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary"
@@ -359,38 +421,36 @@
         </div>
     </div>
 
-
-    <!-- Budget Modal (Simplified: Category, Value, Actions) -->
+    <!-- Budget Modal -->
     <div id="budgetModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('budgetModal')"
-                style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
-            <h2 id="budgetModalTitle" style="margin-bottom: 1.5rem;">Presupuesto</h2>
+            <div class="modal-header">
+                <h2 id="budgetModalTitle">Presupuesto</h2>
+                <button class="modal-close" onclick="closeModal('budgetModal')" aria-label="Cerrar">
+                    <i data-lucide="x" style="width:16px;height:16px;"></i>
+                </button>
+            </div>
             <form id="budgetForm">
                 <input type="hidden" id="budgetId">
                 <div class="form-group">
                     <label>Categoría</label>
                     <select id="budgetCategory" required>
-                        <option value="" disabled selected>Seleccione una categoría</option>
-                        <!-- Options injected dynamically -->
+                        <option value="" disabled selected>Seleccione...</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Límite (COP)</label>
                     <input type="text" id="budgetLimit" required placeholder="0,00" oninput="formatAmountInput(this)">
                 </div>
-
-                <div class="modal-actions" style="justify-content: space-between; margin-top: 2rem;">
-                    <!-- Delete Button (Only shown if editing) -->
-                    <button type="button" id="btnDeleteBudget" class="btn-secondary"
-                        style="color: var(--danger); border-color: var(--danger); display:none;"
-                        onclick="deleteBudgetAction()">Excluir</button>
-
-                    <div style="display: flex; gap: 0.5rem;">
+                <div class="modal-actions" style="justify-content: space-between;">
+                    <button type="button" id="btnDeleteBudget" class="btn-danger" style="display:none;"
+                        onclick="deleteBudgetAction()">
+                        <i data-lucide="trash-2" style="width:15px;height:15px;"></i> Eliminar
+                    </button>
+                    <div style="display: flex; gap: 0.6rem; margin-left: auto;">
                         <button type="button" class="btn-secondary"
                             onclick="closeModal('budgetModal')">Cancelar</button>
-                        <!-- 'Incluir' / 'Alterar' changes based on context -->
-                        <button type="submit" id="btnSaveBudget" class="btn-primary">Incluir</button>
+                        <button type="submit" id="btnSaveBudget" class="btn-primary">Guardar</button>
                     </div>
                 </div>
             </form>
@@ -400,13 +460,16 @@
     <!-- Profile Modal -->
     <div id="profileModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('profileModal')"
-                style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
-            <h2 style="margin-bottom: 1.5rem;">Editar Perfil</h2>
+            <div class="modal-header">
+                <h2>Editar Perfil</h2>
+                <button class="modal-close" onclick="closeModal('profileModal')" aria-label="Cerrar">
+                    <i data-lucide="x" style="width:16px;height:16px;"></i>
+                </button>
+            </div>
             <form id="profileForm">
                 <div class="form-group">
                     <label>Su Nombre</label>
-                    <input type="text" id="profileName" required placeholder="Ej: Juan Perez">
+                    <input type="text" id="profileName" required placeholder="Ej: Juan Pérez">
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="closeModal('profileModal')">Cancelar</button>
@@ -419,25 +482,26 @@
     <!-- Category Modal -->
     <div id="categoryModal" class="modal">
         <div class="modal-content" style="max-width: 400px;">
-            <span class="close" onclick="closeModal('categoryModal')"
-                style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
-            <h2 style="margin-bottom: 1.5rem;">Gestión de Categorías</h2>
-
-            <div style="margin-bottom: 1.5rem;">
-                <ul id="categoryList">
-                    <!-- Categories injected here -->
-                </ul>
-                <p id="noCategoriesMsg" style="text-align: center; color: var(--text-muted); display: none;">No hay
-                    categorías personalizadas.</p>
+            <div class="modal-header">
+                <h2>Categorías</h2>
+                <button class="modal-close" onclick="closeModal('categoryModal')" aria-label="Cerrar">
+                    <i data-lucide="x" style="width:16px;height:16px;"></i>
+                </button>
             </div>
-
-            <form id="categoryForm" style="border-top: 1px solid var(--border); padding-top: 1rem;">
-                <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem; font-weight: 500;">Nueva
-                    Categoría</label>
-                <div class="form-group" style="display: flex; gap: 0.5rem;">
-                    <input type="text" id="newCategoryName" required placeholder="Ej: Viajes" style="flex:1;">
-                    <button type="submit" class="btn-primary" style="width: auto; padding: 0 1rem;">
-                        <i data-lucide="plus"></i>
+            <ul id="categoryList"></ul>
+            <p id="noCategoriesMsg" style="text-align: center; color: var(--text-muted); display: none; padding: 1rem;">
+                No hay categorías personalizadas.
+            </p>
+            <form id="categoryForm"
+                style="border-top: 1px solid var(--border-light); padding-top: 1rem; margin-top: 0.5rem;">
+                <label
+                    style="display: block; margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600; color: var(--text-muted);">
+                    Nueva Categoría
+                </label>
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="newCategoryName" required placeholder="Ej: Viajes" style="flex: 1;">
+                    <button type="submit" class="btn-primary" style="padding: 0 1rem;">
+                        <i data-lucide="plus" style="width:16px;height:16px;"></i>
                     </button>
                 </div>
             </form>
@@ -447,25 +511,28 @@
     <!-- Dependent Modal -->
     <div id="dependentModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('dependentModal')"
-                style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
-            <h2 style="margin-bottom: 1.5rem;">Novo Dependente</h2>
+            <div class="modal-header">
+                <h2>Nuevo Dependente</h2>
+                <button class="modal-close" onclick="closeModal('dependentModal')" aria-label="Cerrar">
+                    <i data-lucide="x" style="width:16px;height:16px;"></i>
+                </button>
+            </div>
             <form id="dependentForm">
                 <div class="form-group">
-                    <label>Nome de Usuário</label>
-                    <input type="text" id="depUsername" required placeholder="Ex: filho1">
+                    <label>Nombre de Usuario</label>
+                    <input type="text" id="depUsername" required placeholder="Ej: filho1">
                 </div>
                 <div class="form-group">
                     <label>Email (Opcional)</label>
-                    <input type="email" id="depEmail" placeholder="email@exemplo.com">
+                    <input type="email" id="depEmail" placeholder="email@ejemplo.com">
                 </div>
                 <div class="form-group">
-                    <label>Senha</label>
-                    <input type="password" id="depPassword" required placeholder="********">
+                    <label>Contraseña</label>
+                    <input type="password" id="depPassword" required placeholder="••••••••">
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" onclick="closeModal('dependentModal')">Cancelar</button>
-                    <button type="submit" class="btn-primary">Criar Dependente</button>
+                    <button type="submit" class="btn-primary">Crear</button>
                 </div>
             </form>
         </div>
@@ -473,7 +540,67 @@
 
     <script src="js/app.js"></script>
     <script>
+        // Init Icons
         lucide.createIcons();
+
+        // ===== BOTTOM NAV SYNC =====
+        const tabToBottomNav = {
+            'dashboard': 'bnav-dashboard',
+            'transactions': 'bnav-transactions',
+            'reports': 'bnav-reports',
+            'budgets': 'bnav-budgets',
+        };
+
+        // Patch switchTab to also update bottom nav
+        const _origSwitchTab = typeof switchTab === 'function' ? switchTab : null;
+
+        function updateBottomNav(tabName) {
+            document.querySelectorAll('.bottom-nav-item').forEach(el => el.classList.remove('active'));
+            const bnavId = tabToBottomNav[tabName];
+            if (bnavId) {
+                const btn = document.getElementById(bnavId);
+                if (btn) btn.classList.add('active');
+            }
+            // Sync sidebar nav
+            document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+            const sideNavId = 'nav-' + tabName;
+            const sideNavEl = document.getElementById(sideNavId);
+            if (sideNavEl) sideNavEl.classList.add('active');
+        }
+
+        // Override switchTab to sync bottom nav and sidebar
+        const _baseSwitchTab = window.switchTab;
+        window.switchTab = function (tabName) {
+            if (_baseSwitchTab) _baseSwitchTab(tabName);
+            updateBottomNav(tabName);
+            // Close sidebar on mobile
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('active');
+                document.getElementById('menuOverlay').classList.remove('active');
+            }
+        };
+
+        // ===== SIDEBAR AVATAR INIT =====
+        function initSidebarUser() {
+            const name = localStorage.getItem('user_name') || 'Usuario';
+            const role = localStorage.getItem('user_role') || 'user';
+            const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+            const avatarEl = document.getElementById('sidebarAvatarInitials');
+            const nameEl = document.getElementById('sidebarUserName');
+            const roleEl = document.getElementById('sidebarUserRole');
+
+            if (avatarEl) avatarEl.textContent = initials || '?';
+            if (nameEl) nameEl.textContent = name;
+            if (roleEl) roleEl.textContent = role === 'admin' ? 'Administrador' :
+                role === 'subadmin' ? 'Sub-admin' : 'Dependente';
+        }
+
+        // Run on load
+        document.addEventListener('DOMContentLoaded', () => {
+            initSidebarUser();
+            lucide.createIcons();
+        });
     </script>
 </body>
 
