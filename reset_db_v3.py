@@ -9,12 +9,12 @@ import shutil
 
 # Configurações de Caminho
 DB_PATH = os.getenv("DATABASE_URL", "backend/data/financeiro.db").replace("sqlite:///", "")
-BACKUP_PATH = DB_PATH + ".bak"
-
 if not os.path.exists(DB_PATH):
     # Fallback
     if os.path.exists("data/financeiro.db"): DB_PATH = "data/financeiro.db"
     elif os.path.exists("financeiro.db"): DB_PATH = "financeiro.db"
+
+BACKUP_PATH = DB_PATH + ".bak"
 
 print(f"🔄 Iniciando Reset de Banco de Dados: {DB_PATH}")
 
