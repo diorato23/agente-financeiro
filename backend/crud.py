@@ -86,37 +86,6 @@ def delete_budget(db: Session, budget_id: int, user_id: int):
         db.commit()
     return val
 
-# Profile
-def get_profile(db: Session):
-    return db.query(models.Profile).first()
-
-def get_profile_by_name(db: Session, name: str):
-    return db.query(models.Profile).filter(models.Profile.name == name).first()
-
-def update_profile(db: Session, name: str, password: str = None):
-    profile = db.query(models.Profile).first()
-    if not profile:
-        profile = models.Profile(name=name, password=password)
-        db.add(profile)
-    else:
-        profile.name = name
-        if password:
-            profile.password = password
-    db.commit()
-    db.refresh(profile)
-    return profile
-
-def verify_login(db: Session, login_data: schemas.LoginSchema):
-    # Check if any profile exists (Single user mode)
-    # Or find by name
-    profile = db.query(models.Profile).first()
-    if not profile:
-        return False # No user yet
-    
-    # Simple check: Name must match (case insensitive?) and Password match
-    # For this specific user request: "puts name and password and enters"
-    if profile.name.lower() == login_data.name.lower() and profile.password == login_data.password:
-        return True
     return False
 
 
@@ -324,9 +293,9 @@ def get_transactions_stats(db: Session, transacoes: list = None, user_id: int = 
     
     if not transacoes:
         return schemas.TransactionStats(
-            total_receitas=0,
-            total_despesas=0,
-            saldo=0,
+            income=0,
+            expenses=0,
+            balance=0,
             quantidade_transacoes=0,
             quantidade_receitas=0,
             quantidade_despesas=0,
@@ -350,9 +319,9 @@ def get_transactions_stats(db: Session, transacoes: list = None, user_id: int = 
         por_categoria[t.category]['quantidade'] += 1
     
     return schemas.TransactionStats(
-        total_receitas=total_receitas,
-        total_despesas=total_despesas,
-        saldo=total_receitas - total_despesas,
+        income=total_receitas,
+        expenses=total_despesas,
+        balance=total_receitas - total_despesas,
         quantidade_transacoes=len(transacoes),
         quantidade_receitas=len(receitas),
         quantidade_despesas=len(despesas),

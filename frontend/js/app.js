@@ -87,10 +87,13 @@ document.addEventListener('DOMContentLoaded', () => {
         adminLink.style.display = 'flex';
     }
 
+    // Inicializar sistema de temas
+    initTheme();
+
     // Use stored username if available
     const storedName = localStorage.getItem('user_name');
     if (storedName) {
-        document.getElementById('userNameDisplay').innerText = `Hola, ${storedName}`;
+        document.getElementById('userNameDisplay').innerText = `¡Hola, ${storedName}!`;
     }
 
     fetchSummary();
@@ -122,7 +125,7 @@ async function fetchProfile() {
 
         // Use 'username' from User schema
         const name = data.username || "Usuario";
-        document.getElementById('userNameDisplay').innerText = `Hola, ${name}`;
+        document.getElementById('userNameDisplay').innerText = `¡Hola, ${name}!`;
 
         // Show Dependents link if user is a parent (no parent_id)
         const navDependents = document.getElementById('navDependents');
@@ -137,9 +140,8 @@ async function fetchProfile() {
             userHeader.style.display = isParent ? 'table-cell' : 'none';
         }
     } catch (err) {
-        // Fallback
         const storedName = localStorage.getItem('user_name');
-        document.getElementById('userNameDisplay').innerText = `Hola, ${storedName || 'Usuario'}`;
+        document.getElementById('userNameDisplay').innerText = `¡Hola, ${storedName || 'Usuario'}!`;
         console.error(err);
     }
 }
@@ -185,14 +187,14 @@ function renderBudgetStatusAlerts(statusList) {
     container.innerHTML = '';
 
     if (statusList.length === 0) {
-        container.innerHTML = '<p style="color: var(--text-muted)">Nenhum orçamento configurado.</p>';
+        container.innerHTML = '<p style="color: var(--text-muted)">No hay presupuestos configurados.</p>';
         return;
     }
 
     statusList.forEach(b => {
         const pct = Math.min(b.percentage, 100);
         const color = b.exceeded ? '#ef4444' : b.alert ? '#f59e0b' : '#10b981';
-        const label = b.exceeded ? '🔴 Excedido' : b.alert ? '🟡 Atenção' : '🟢 OK';
+        const label = b.exceeded ? '🔴 Excedido' : b.alert ? '🟡 Atención' : '🟢 OK';
         container.innerHTML += `
             <div class="budget-item" style="margin-bottom:1rem;">
                 <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
@@ -203,8 +205,8 @@ function renderBudgetStatusAlerts(statusList) {
                     <div style="width:${pct}%; height:100%; background:${color}; border-radius:4px; transition:width 0.4s;"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted);">
-                    <span>Gasto: ${formatCurrency(b.spent)}</span>
-                    <span>Limite: ${formatCurrency(b.limit_amount)}</span>
+                    <span>Gastado: ${formatCurrency(b.spent)}</span>
+                    <span>Límite: ${formatCurrency(b.limit_amount)}</span>
                 </div>
             </div>
         `;
@@ -218,7 +220,7 @@ async function applyRecurringTransactions() {
         if (!res.ok) return;
         const data = await res.json();
         if (data.applied > 0) {
-            showToast(`🔄 ${data.applied} transação(ões) recorrente(s) aplicada(s) este mês!`, 'success');
+            showToast(`🔄 ${data.applied} transacción(es) recurrente(s) aplicada(s) este mes.`, 'success');
             fetchSummary();
             fetchTransactions();
         }
@@ -273,7 +275,7 @@ function updateDashboard(data) {
     const activeBudgets = data.budgets.filter(b => b.limit > 0 || b.spent > 0);
 
     if (activeBudgets.length === 0) {
-        budgetAlerts.innerHTML = '<p style="color: var(--text-muted)">Nenhum orçamento ativo.</p>';
+        budgetAlerts.innerHTML = '<p style="color: var(--text-muted)">No hay presupuestos activos.</p>';
         return;
     }
 
@@ -288,7 +290,7 @@ function updateDashboard(data) {
         if (b.income_boost > 0) {
             incomeNote = `<div style="font-size: 0.75rem; color: #10b981; margin-top: 4px;">
                 <i data-lucide="trending-up" style="width:12px; height:12px; display:inline;"></i> 
-                Aumentado em ${formatCurrency(b.income_boost)} por renda
+                Aumentado en ${formatCurrency(b.income_boost)} por ingreso
              </div>`;
         }
 
@@ -303,7 +305,7 @@ function updateDashboard(data) {
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
                     <span>${formatCurrency(b.spent)}</span>
-                    <span>Disponível: ${formatCurrency(b.limit)}</span>
+                    <span>Disponible: ${formatCurrency(b.limit)}</span>
                 </div>
                 ${incomeNote}
             </div>
@@ -315,7 +317,14 @@ function updateDashboard(data) {
 function formatDateDisplay(dateString) {
     if (!dateString) return '';
     const [year, month, day] = dateString.split('-');
-    return `${day}-${month}-${year}`;
+    return `${day}/${month}/${year}`;
+}
+
+// Helper para formatar data no estilo DD/MM/YYYY para display nos badges
+function formatDateBadge(isoDate) {
+    if (!isoDate) return '';
+    const [year, month, day] = isoDate.split('-');
+    return `${day}/${month}/${year}`;
 }
 
 function renderTransactions() {
@@ -323,8 +332,8 @@ function renderTransactions() {
     transactions.slice().reverse().forEach(t => {
         const row = document.createElement('tr');
 
-        // Coluna de usuário (apenas se for pai)
-        const userCol = isParent ? `<td><span style="font-size: 0.8rem; color: var(--text-muted);">${t.user ? t.user.username : 'Eu'}</span></td>` : '';
+        // Columna de usuario (solo si es padre)
+        const userCol = isParent ? `<td><span style="font-size: 0.8rem; color: var(--text-muted);">${t.user ? t.user.username : 'Yo'}</span></td>` : '';
 
         row.innerHTML = `
             <td>${formatDateDisplay(t.date)}</td>
@@ -455,7 +464,7 @@ window.deleteBudgetAction = async () => {
 window.openProfileModal = () => {
     document.getElementById('profileModal').style.display = 'flex';
     const currentText = document.getElementById('userNameDisplay').innerText;
-    const name = currentText.replace('Hola, ', '');
+    const name = currentText.replace('¡Hola, ', '').replace('!', '');
     document.getElementById('profileName').value = name;
 };
 
@@ -653,14 +662,14 @@ window.fetchDependents = async () => {
     const list = document.getElementById('dependentsList');
     try {
         const res = await fetch(`${API_URL}/users/dependents`);
-        if (!res.ok) throw new Error('Falha ao buscar dependentes');
+        if (!res.ok) throw new Error('Error al obtener dependientes');
         const deps = await res.json();
 
         if (deps.length === 0) {
             list.innerHTML = `
-                <p style="text-align:center; padding:1rem;">Nenhum dependente cadastrado ainda.</p>
+                <p style="text-align:center; padding:1rem;">Ningún dependiente registrado aún.</p>
                 <p style="text-align:center; color: var(--text-muted); font-size: 0.85em;">
-                    Use o botão acima para enviar o convite.
+                    Usa el botón de arriba para enviar la invitación.
                 </p>
             `;
             return;
@@ -670,7 +679,7 @@ window.fetchDependents = async () => {
             <div class="budget-item" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid var(--border);">
                 <div>
                     <div style="font-weight: 600;">${d.username}</div>
-                    <div style="font-size: 0.8rem; color: var(--text-muted);">Dependente Ativo</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Dependiente Activo</div>
                 </div>
                 <i data-lucide="user-check" style="color: #10b981;"></i>
             </div>
@@ -678,7 +687,7 @@ window.fetchDependents = async () => {
         lucide.createIcons();
     } catch (e) {
         console.error(e);
-        list.innerHTML = '<p style="text-align:center; color: var(--danger);">Erro ao carregar lista.</p>';
+        list.innerHTML = '<p style="text-align:center; color: var(--danger);">Error al cargar la lista.</p>';
     }
 };
 
@@ -738,7 +747,7 @@ async function updateCharts(period = null) {
         const values = data.expenses_by_category.map(c => c.total);
 
         if (labels.length === 0) {
-            ctx.canvas.parentElement.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem;">Sem despesas no período</p>';
+            ctx.canvas.parentElement.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem;">Sin gastos en el período</p>';
             return;
         }
 
@@ -866,11 +875,11 @@ function updateFilterIndicators() {
     indicators.style.display = 'block';
     let html = '<div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">';
 
-    if (currentFilters.dataInicio) html += `<span class="badge">Desde: ${currentFilters.dataInicio}</span>`;
-    if (currentFilters.dataFim) html += `<span class="badge">Hasta: ${currentFilters.dataFim}</span>`;
+    if (currentFilters.dataInicio) html += `<span class="badge">Desde: ${formatDateBadge(currentFilters.dataInicio)}</span>`;
+    if (currentFilters.dataFim) html += `<span class="badge">Hasta: ${formatDateBadge(currentFilters.dataFim)}</span>`;
     if (currentFilters.tipo) html += `<span class="badge">Tipo: ${currentFilters.tipo === 'income' ? 'Ingreso' : 'Gasto'}</span>`;
     if (currentFilters.categoria) html += `<span class="badge">Categoría: ${currentFilters.categoria}</span>`;
-    if (currentFilters.busca) html += `<span class="badge">Busca: "${currentFilters.busca}"</span>`;
+    if (currentFilters.busca) html += `<span class="badge">Búsqueda: "${currentFilters.busca}"</span>`;
 
     html += '</div>';
     indicators.innerHTML = html;
@@ -1020,3 +1029,61 @@ window.exportToCSV = () => {
     showToast('CSV exportado con éxito', 'success');
 };
 
+
+// ============ SISTEMA DE TEMAS ============
+
+/**
+ * Inicializa o sistema de temas lendo preferência salva ou do sistema.
+ * Deve ser chamado no DOMContentLoaded.
+ */
+function initTheme() {
+    const saved = localStorage.getItem('theme') || 'system';
+    applyTheme(saved);
+    updateThemeButtons(saved);
+}
+
+/**
+ * Aplica o tema especificado no elemento <html>.
+ * @param {'light'|'dark'|'system'} theme 
+ */
+function applyTheme(theme) {
+    const html = document.documentElement;
+    if (theme === 'dark') {
+        html.setAttribute('data-theme', 'dark');
+    } else if (theme === 'light') {
+        html.setAttribute('data-theme', 'light');
+    } else {
+        // Sistema: detecta preferência do OS
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        html.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    }
+}
+
+/**
+ * Atualiza os botões de tema para refletir a seleção atual.
+ * @param {'light'|'dark'|'system'} theme
+ */
+function updateThemeButtons(theme) {
+    document.querySelectorAll('.theme-option').forEach(btn => btn.classList.remove('active'));
+    const activeBtn = document.getElementById(`theme-${theme}`);
+    if (activeBtn) activeBtn.classList.add('active');
+    lucide.createIcons(); // Reinicializa ícones caso necessário
+}
+
+/**
+ * Define e persiste o tema escolhido pelo usuário.
+ * @param {'light'|'dark'|'system'} theme
+ */
+window.setTheme = function (theme) {
+    localStorage.setItem('theme', theme);
+    applyTheme(theme);
+    updateThemeButtons(theme);
+};
+
+// Escutar mudanças de preferência do sistema (para o modo 'system')
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    const saved = localStorage.getItem('theme') || 'system';
+    if (saved === 'system') {
+        applyTheme('system');
+    }
+});

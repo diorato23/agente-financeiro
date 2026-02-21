@@ -22,22 +22,19 @@ router = APIRouter()
 @router.post("/invite", response_model=schemas.InviteResponse)
 def generate_invite(current_user: models.User = Depends(auth.get_current_user_required)):
     if current_user.role == "subadmin":
-        raise HTTPException(status_code=403, detail="Subadministradores no pueden generar invitaciones.")
+        raise HTTPException(status_code=403, detail="Los subadministradores no pueden generar invitaciones.")
     try:
-        # Importação local para evitar ciclo
         from . import invites
-        # Verifica limite
         if not invites.check_dependent_limit(current_user.id):
-            raise HTTPException(status_code=400, detail="Limite de dependentes atingido (Máx 4).")
+            raise HTTPException(status_code=400, detail="Límite de dependientes alcanzado (Máx 4).")
         
         token = invites.create_invite_token(current_user.id)
-        # URL do frontend (ajustar conforme necessidade, ou retornar só o token)
         base_url = os.getenv("FRONTEND_URL", "https://finanzas.ktuche.com") 
         invite_link = f"{base_url}/cadastro-dependente.html?token={token}"
         
         return {"invite_link": invite_link, "token": token}
     except Exception as e:
-        print(f"Erro ao gerar convite: {e}")
+        print(f"Error al generar invitación: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/invite/info", response_model=schemas.InviteInfo)
@@ -45,11 +42,11 @@ def get_invite_info(token: str, db: Session = Depends(get_db)):
     from . import invites
     parent_id = invites.verify_invite_token(token)
     if not parent_id:
-        raise HTTPException(status_code=400, detail="Convite inválido ou expirado.")
+        raise HTTPException(status_code=400, detail="Invitación inválida o expirada.")
     
     parent = crud.get_user(db, parent_id)
     if not parent:
-        raise HTTPException(status_code=404, detail="Pai não encontrado.")
+        raise HTTPException(status_code=404, detail="Usuario principal no encontrado.")
     
     count = invites.get_dependent_count(parent_id)
     return {
@@ -62,27 +59,22 @@ def get_invite_info(token: str, db: Session = Depends(get_db)):
 @router.post("/register-dependent", response_model=schemas.User)
 def register_dependent(data: schemas.DependentRegister, db: Session = Depends(get_db)):
     from . import invites
-    # Validar Token
     parent_id = invites.verify_invite_token(data.token)
     if not parent_id:
-        raise HTTPException(status_code=400, detail="Convite inválido ou expirado.")
+        raise HTTPException(status_code=400, detail="Invitación inválida o expirada.")
         
-    # Validar Limite novamente (segurança extra)
     if not invites.check_dependent_limit(parent_id):
-        raise HTTPException(status_code=400, detail="Limite de dependentes atingido.")
+        raise HTTPException(status_code=400, detail="Límite de dependientes alcanzado.")
 
-    # Verificar se usuário já existe
     db_user = crud.get_user_by_username(db, username=data.username)
     if db_user:
-        raise HTTPException(status_code=400, detail="Username já cadastrado.")
+        raise HTTPException(status_code=400, detail="El nombre de usuario ya está registrado.")
     
-    # Verificar se email já existe (se fornecido)
     if data.email:
         db_user_email = crud.get_user_by_email(db, email=data.email)
         if db_user_email:
-            raise HTTPException(status_code=400, detail="Email já cadastrado.")
+            raise HTTPException(status_code=400, detail="El correo electrónico ya está registrado.")
     
-    # Criar Dependente
     user_in = schemas.UserCreate(
         username=data.username,
         email=data.email,
@@ -96,10 +88,10 @@ def register_dependent(data: schemas.DependentRegister, db: Session = Depends(ge
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except IntegrityError:
-        raise HTTPException(status_code=400, detail="Nome de usuário ou email já existente.")
+        raise HTTPException(status_code=400, detail="Usuario o correo ya existente.")
     except Exception as e:
-        print(f"Erro ao criar dependente: {e}")
-        raise HTTPException(status_code=500, detail="Erro interno ao criar usuário. Tente outro nome de usuário.")
+        print(f"Error al crear dependiente: {e}")
+        raise HTTPException(status_code=500, detail="Error interno al crear el usuario. Prueba con otro nombre de usuario.")
 
 # --- Fim Rotas Convite ---
 
@@ -130,21 +122,19 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @router.post("/auth/register", response_model=schemas.User)
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    """Registrar novo usuário"""
-    # Verificar se usuário já existe
+    """Registrar nuevo usuario"""
     if crud.get_user_by_username(db, user.username):
         raise HTTPException(
             status_code=400,
-            detail="Nome de usuário já existe"
+            detail="El nombre de usuario ya existe"
         )
     
-    # Criar usuário
     password_hash = auth.get_password_hash(user.password)
     try:
         return crud.create_user(db=db, user=user, password_hash=password_hash)
     except IntegrityError as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail="Dados duplicados ou erro de integridade. Verifique usuário/email.")
+        raise HTTPException(status_code=400, detail="Datos duplicados o error de integridad. Verifica usuario/correo.")
     except ValueError as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
@@ -152,8 +142,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         db.rollback()
         import traceback
         error_detail = traceback.format_exc()
-        print(f"❌ ERRO CRÍTICO NO REGISTRO:\n{error_detail}")
-        # Retorna o detalhe do erro se estiver em desenvolvimento ou log resumido
+        print(f"❌ ERROR CRÍTICO EN REGISTRO:\n{error_detail}")
         raise HTTPException(
             status_code=500, 
             detail=f"Error interno al crear usuario. Detalle técnico: {str(e)}"
@@ -351,11 +340,11 @@ def update_transaction(
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
     if current_user.parent_id and current_user.role == "user":
-        raise HTTPException(status_code=403, detail="Dependentes não podem editar transações")
+        raise HTTPException(status_code=403, detail="Los dependientes no pueden editar transacciones")
         
     db_transaction = crud.update_transaction(db, transaction_id, transaction, user_id=current_user.id)
     if db_transaction is None:
-        raise HTTPException(status_code=404, detail="Transaction not found")
+        raise HTTPException(status_code=404, detail="Transacción no encontrada")
     return db_transaction
 
 @router.delete("/transactions/{transaction_id}")
@@ -365,7 +354,7 @@ def delete_transaction(
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
     if current_user.parent_id and current_user.role == "user":
-        raise HTTPException(status_code=403, detail="Dependentes não podem excluir transações")
+        raise HTTPException(status_code=403, detail="Los dependientes no pueden eliminar transacciones")
         
     crud.delete_transaction(db, transaction_id, user_id=current_user.id)
     return {"ok": True}
@@ -468,12 +457,12 @@ def create_budget(
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
     if current_user.parent_id and current_user.role == "user":
-        raise HTTPException(status_code=403, detail="Dependentes não podem criar orçamentos")
+        raise HTTPException(status_code=403, detail="Los dependientes no pueden crear presupuestos")
 
     current_budgets = crud.get_budgets(db, user_id=current_user.id)
     for b in current_budgets:
         if b.category.lower() == budget.category.lower():
-            raise HTTPException(status_code=400, detail="Category already has a budget. Use Update.")
+            raise HTTPException(status_code=400, detail="La categoría ya tiene un presupuesto. Usa Actualizar.")
     return crud.create_budget(db=db, budget=budget, user_id=current_user.id)
 
 @router.get("/budgets/", response_model=List[schemas.Budget])
@@ -494,11 +483,11 @@ def update_budget(
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
     if current_user.parent_id:
-        raise HTTPException(status_code=403, detail="Dependentes não podem editar orçamentos")
+        raise HTTPException(status_code=403, detail="Los dependientes no pueden editar presupuestos")
 
     db_budget = crud.update_budget(db, budget_id, budget, user_id=current_user.id)
     if db_budget is None:
-        raise HTTPException(status_code=404, detail="Budget not found")
+        raise HTTPException(status_code=404, detail="Presupuesto no encontrado")
     return db_budget
 
 @router.delete("/budgets/{budget_id}")
@@ -508,7 +497,7 @@ def delete_budget(
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
     if current_user.parent_id:
-        raise HTTPException(status_code=403, detail="Dependentes não podem excluir orçamentos")
+        raise HTTPException(status_code=403, detail="Los dependientes no pueden eliminar presupuestos")
 
     crud.delete_budget(db, budget_id, user_id=current_user.id)
     return {"ok": True}
@@ -580,13 +569,12 @@ def create_category(
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
     if current_user.parent_id and current_user.role == "user":
-        raise HTTPException(status_code=403, detail="Dependentes não podem criar categorias")
+        raise HTTPException(status_code=403, detail="Los dependientes no pueden crear categorías")
 
     try:
         return crud.create_category(db=db, category=category, user_id=current_user.id)
     except Exception as e:
-         # In case of duplicate, likely IntegrityError
-        raise HTTPException(status_code=400, detail="Category probably already exists")
+        raise HTTPException(status_code=400, detail="La categoría probablemente ya existe")
 
 @router.delete("/categories/{category_id}")
 def delete_category(
@@ -595,55 +583,10 @@ def delete_category(
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
     if current_user.parent_id and current_user.role == "user":
-        raise HTTPException(status_code=403, detail="Dependentes não podem excluir categorias")
+        raise HTTPException(status_code=403, detail="Los dependientes no pueden eliminar categorías")
 
     crud.delete_category(db, category_id, user_id=current_user.id)
     return {"ok": True}
-
-
-# ============ PROFILE (DEPRECATED — será removido em breve) ============
-# TODO: Remover estas rotas após migração completa para /users/me
-
-@router.get("/profile", response_model=schemas.Profile)
-def read_profile(
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.require_admin)  # H2 FIX: exige auth
-):
-    profile = crud.get_profile(db)
-    if not profile:
-        profile = crud.update_profile(db, "admin", "1234")
-    return profile
-
-@router.put("/profile", response_model=schemas.Profile)
-def update_profile(
-    profile: schemas.ProfileCreate, 
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(auth.require_admin)  # H2 FIX: exige auth
-):
-    return crud.update_profile(db, profile.name, profile.password)
-
-@router.post("/login")
-def login_legacy(login_data: schemas.LoginSchema, db: Session = Depends(get_db)):
-    """Login legacy (backward compatibility) - redirecciona al nuevo sistema"""
-    # Intentar autenticar con el nuevo sistema de usuarios
-    user = auth.authenticate_user(db, login_data.name, login_data.password)
-    if user:
-        access_token = auth.create_access_token(
-            data={"sub": user.username, "role": user.role}
-        )
-        return {
-            "ok": True, 
-            "name": user.username,
-            "access_token": access_token,
-            "token_type": "bearer",
-            "role": user.role
-        }
-    
-    # Fallback al sistema viejo de profile
-    success = crud.verify_login(db, login_data)
-    if not success:
-        raise HTTPException(status_code=401, detail="Credenciales incorrectas")
-    return {"ok": True, "name": login_data.name, "role": "admin"}
 
 
 # ============ FEATURE #17 — TRANSAÇÕES RECORRENTES ============
@@ -671,14 +614,14 @@ def deactivate_recurring(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
-    """Desativa uma transação recorrente"""
+    """Desactiva una transacción recurrente"""
     t = db.query(models.Transaction).filter(
         models.Transaction.id == transaction_id,
         models.Transaction.user_id == current_user.id,
         models.Transaction.is_recurring == True
     ).first()
     if not t:
-        raise HTTPException(status_code=404, detail="Transação recorrente não encontrada")
+        raise HTTPException(status_code=404, detail="Transacción recurrente no encontrada")
     t.recurrence_active = False
     db.commit()
     return {"ok": True}
@@ -691,9 +634,9 @@ def get_budget_status(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user_required)
 ):
-    """Retorna o status dos orçamentos com % de uso no mês atual"""
+    """Retorna el estado de los presupuestos con % de uso en el mes actual"""
     if current_user.parent_id:
-        raise HTTPException(status_code=403, detail="Dependentes não têm orçamentos")
+        raise HTTPException(status_code=403, detail="Los dependientes no tienen presupuestos")
     return crud.get_budget_status(db, user_id=current_user.id)
 
 

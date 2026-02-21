@@ -194,9 +194,9 @@ class TransactionFilter(BaseModel):
 
 class TransactionStats(BaseModel):
     """Estatísticas agregadas de transações"""
-    total_receitas: float
-    total_despesas: float
-    saldo: float
+    income: float
+    expenses: float
+    balance: float
     quantidade_transacoes: int
     quantidade_receitas: int
     quantidade_despesas: int
