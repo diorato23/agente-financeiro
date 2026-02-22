@@ -543,7 +543,8 @@ function setupModals() {
             amount: parseAmount(rawAmount),
             description: document.getElementById('description').value,
             category: document.getElementById('category').value,
-            date: document.getElementById('date').value,
+            // Garantir que uma data vazia não cause erro 422 no FastAPI
+            date: document.getElementById('date').value || new Date().toISOString().split('T')[0],
             // Feature #17 — Recorrência
             is_recurring: document.getElementById('isRecurring')?.checked || false,
             recurrence_day: document.getElementById('isRecurring')?.checked

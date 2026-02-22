@@ -440,19 +440,19 @@ def apply_recurring_transactions(db: Session, user_id: int):
         if not r.recurrence_active or not r.recurrence_day:
             continue
 
-        # Verificar se já foi aplicada este mês
+        # Verificar se já foi aplicada este mês (evitar duplicidade no mesmo mês/ano)
         existing = db.query(models.Transaction).filter(
             models.Transaction.user_id == user_id,
             models.Transaction.description == r.description,
             models.Transaction.amount == r.amount,
             models.Transaction.category == r.category,
             models.Transaction.is_recurring == False,
-        ).filter(
-            models.Transaction.date >= date(current_year, current_month, 1)
+            models.Transaction.date >= date(current_year, current_month, 1),
+            models.Transaction.date <= date(current_year, current_month, 28 if current_month == 2 else 30) # Aproximação segura
         ).first()
 
         if existing:
-            continue  # Já aplicada este mês
+            continue
 
         import calendar
         ultimo_dia = calendar.monthrange(current_year, current_month)[1]
