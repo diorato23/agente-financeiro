@@ -621,6 +621,13 @@
             // Clear errors
             document.getElementById('error-message').style.display = 'none';
 
+            // Disable inputs in hidden section to avoid browser validation errors
+            const loginInputs = document.querySelectorAll('#loginSection input');
+            const registerInputs = document.querySelectorAll('#registerSection input, #registerSection select');
+
+            loginInputs.forEach(i => i.disabled = !loginMode);
+            registerInputs.forEach(i => i.disabled = loginMode);
+
             // Scroll to top
             window.scrollTo(0, 0);
         }
@@ -646,10 +653,19 @@
 
         function updateReq(id, isValid) {
             const el = document.getElementById(id);
+            if (!el) return;
+
             el.className = isValid ? 'valid' : 'invalid';
-            const icon = el.querySelector('i');
-            icon.setAttribute('data-lucide', isValid ? 'check-circle' : 'circle');
-            lucide.createIcons();
+            const icon = el.querySelector('.req-icon');
+            if (icon) {
+                // Se o Lucide já transformou em SVG, precisamos mudar o data-lucide e recriar
+                // ou simplesmente mudar a classe se fosse baseado em CSS.
+                // Aqui vamos garantir que o atributo esteja lá para o Lucide.
+                icon.setAttribute('data-lucide', isValid ? 'check-circle' : 'circle');
+                if (window.lucide) {
+                    lucide.createIcons();
+                }
+            }
         }
 
         function showError(msg) {
@@ -735,6 +751,8 @@
                 btn.disabled = false;
             }
         });
+        // Initialize
+        setMode(true);
     </script>
 </body>
 
