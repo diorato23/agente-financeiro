@@ -21,10 +21,26 @@ try:
     if admin_user:
         new_pass = "admin123"
         admin_user.password_hash = get_password_hash(new_pass)
+        # Garantir campos básicos para evitar erros de validação
+        if not admin_user.email: admin_user.email = "admin@localhost"
+        admin_user.is_active = True
+        admin_user.role = "admin"
+        
         db.commit()
-        print(f"✅ SUCESSO: A senha do usuário '{admin_user.username}' foi resetada para: {new_pass}")
+        print(f"✅ SUCESSO: O usuário '{admin_user.username}' foi atualizado e a senha resetada para: {new_pass}")
     else:
-        print("❌ ERRO: Usuário 'admin' não encontrado no banco de dados.")
+        # Se por algum motivo o admin sumiu, criar de volta
+        print("💡 Usuário 'admin' não encontrado. Criando novo admin...")
+        new_admin = User(
+            username="admin",
+            email="admin@localhost",
+            password_hash=get_password_hash("admin123"),
+            role="admin",
+            is_active=True
+        )
+        db.add(new_admin)
+        db.commit()
+        print(f"✅ SUCESSO: Novo usuário 'admin' criado com senha: admin123")
     
     db.close()
 
